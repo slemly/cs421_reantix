@@ -32,3 +32,6 @@ class Building(Construction):
     
     def clone(self):
         return Building(self.coords, self.type, self.player, self.captureHealth)
+
+    def getCoords(self):
+        return self.coords

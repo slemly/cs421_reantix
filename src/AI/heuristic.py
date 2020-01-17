@@ -10,6 +10,7 @@ from GameState import *
 from AIPlayerUtils import *
 
 
+
 class AIPlayer(Player):
     
     def __init__(self, inputPlayerId):
@@ -37,9 +38,58 @@ class AIPlayer(Player):
         elif currentState.phase == SETUP_PHASE_2:
             numToPlace = 2
             moves = []
+            # find enemy anthill and tunnel locations
+            enemyInv = getEnemyInv(self, currentState)
+            enemyHill = enemyInv.getAnthill() #not sure if this is proper syntax
+            enemyTunn = enemyInv.getTunnels() #not sure if this is proper syntax
+            print("Hill: ", enemyHill.getCoords())
+            #construct a representation of the enemy's territory
+            #Then iterate through it and find locations furthest from 
+            placement_area = []
+            for i in range(6,10):
+                placement_area_row=[]
+                for k in range(0,10):
+                    if currentState.board[k][i].constr==None:
+                        hill_dist = approxDist(enemyHill.coords,(k,i))
+                        tunn_dist = approxDist(enemyTunn[0].coords,(k,i))
+                        if  hill_dist >= tunn_dist:
+                            placement_area_row.append(hill_dist)
+                        else: 
+                            placement_area_row.append(tunn_dist)
+                    else:
+                        placement_area_row.append(0)
+                placement_area.append(placement_area_row)
+            # for row in placement_area:
+            #     print(row)
+            big_val = 0
+            big_val_loc = (0,0)
+            for i in range(0,4):
+                for k in range(0,10):
+                    if placement_area[i][k] > big_val:
+                        big_val = placement_area[i][k]
+                        big_val_loc = (k, i + 6)
+            placement_area[big_val_loc[0]][big_val_loc[1]-6] = 0
+            moves.append(big_val_loc)
+            other_big_val = 0
+            other_big_val_loc = (0,0)
+            for i in range(0,4):
+                for k in range(0,10):
+                    if placement_area[i][k] > other_big_val:
+                        other_big_val = placement_area[i][k]
+                        other_big_val_loc = (k, i + 6)
+            moves.append(other_big_val_loc)
+        return moves
+            
+            
 
-            for i in range(0, numToPlace):
-                move = None
+                
+
+                
+                
+                
+                
+
+
 
 
     #TODO: This
