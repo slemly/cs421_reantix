@@ -33,7 +33,7 @@ class AIPlayer(Player):
             
             return[(2,1), (7,2), \
             (1,3),(2,3),(3,3),\
-            (4,3),(5,3),(6,3),
+            (4,3),(5,3),(6,3),\
             (7,3),(8,3),(0,3)]
         elif currentState.phase == SETUP_PHASE_2:
             numToPlace = 2
@@ -43,6 +43,7 @@ class AIPlayer(Player):
             enemyHill = enemyInv.getAnthill() #not sure if this is proper syntax
             enemyTunn = enemyInv.getTunnels() #not sure if this is proper syntax
             print("Hill: ", enemyHill.getCoords())
+
             #construct a representation of the enemy's territory
             #Then iterate through it and find locations furthest from 
             placement_area = []
@@ -81,16 +82,6 @@ class AIPlayer(Player):
         return moves
             
             
-
-                
-
-                
-                
-                
-                
-
-
-
 
     #TODO: This
     def getMove(self, currentState):
