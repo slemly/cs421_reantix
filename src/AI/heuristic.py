@@ -26,7 +26,7 @@ class AIPlayer(Player):
             # an opening at the opposite side of the anthill.
             # I am using hardcoded structure placements for now.
             #TODO: make RNG to choose between three good structure setups
-            return[(2,1), (7,2), \
+            return[(2,1), (7,2),\
             (1,3),(2,3),(3,3),\
             (4,3),(5,3),(6,3),\
             (7,3),(8,3),(0,3)]
@@ -69,8 +69,9 @@ class AIPlayer(Player):
                         other_big_val = placement_area[i][k]
                         other_big_val_loc = (k, i + 6)
             moves.append(other_big_val_loc)
-        print("Placing food at : ",moves)
+        print("Placing food at : ", moves)
         return moves
+        # return [(1,6),(1,6)]
             
 
     #TODO: This
@@ -116,9 +117,6 @@ class AIPlayer(Player):
 
         # # END COPIED CODE FROM FoodGatherer.py # # 
 
-
-
-
     #TODO: This
     def getAttack(self, currentState, attackingAnt, enemyLocations):
         return enemyLocations[0]
@@ -126,7 +124,3 @@ class AIPlayer(Player):
     #TODO: This
     def registerWin(self, hasWon):
         pass
-
-
-
-    
