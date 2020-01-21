@@ -22,15 +22,10 @@ class AIPlayer(Player):
         self.myFood=None
         self.myTunnel=None
         if currentState.phase == SETUP_PHASE_1:
-            # hill_locx = random.choice([2,3,6,7])
-            # hill_locy = random.choice([0,1,2])
-            # tunn_locx = random.choice(range(1,8))
-            # tunn_locy = random.choice([])
-            
             # grass location coordinates in a row in front,
             # an opening at the opposite side of the anthill.
             # I am using hardcoded structure placements for now.
-            
+            #TODO: make RNG to choose between three good structure setups
             return[(2,1), (7,2), \
             (1,3),(2,3),(3,3),\
             (4,3),(5,3),(6,3),\
@@ -42,10 +37,9 @@ class AIPlayer(Player):
             enemyInv = getEnemyInv(self, currentState)
             enemyHill = enemyInv.getAnthill() #not sure if this is proper syntax
             enemyTunn = enemyInv.getTunnels() #not sure if this is proper syntax
-            print("Hill: ", enemyHill.getCoords())
-
-            #construct a representation of the enemy's territory
-            #Then iterate through it and find locations furthest from 
+            #Construct a representation of the enemy's territory;
+            #Iterate through it and find locations furthest from tunnels 
+            # and anthills at which food can be placed
             placement_area = []
             for i in range(6,10):
                 placement_area_row=[]
@@ -55,13 +49,9 @@ class AIPlayer(Player):
                         tunn_dist = approxDist(enemyTunn[0].coords,(k,i))
                         if  hill_dist >= tunn_dist:
                             placement_area_row.append(hill_dist)
-                        else: 
-                            placement_area_row.append(tunn_dist)
-                    else:
-                        placement_area_row.append(0)
+                        else: placement_area_row.append(tunn_dist)
+                    else: placement_area_row.append(0)
                 placement_area.append(placement_area_row)
-            # for row in placement_area:
-            #     print(row)
             big_val = 0
             big_val_loc = (0,0)
             for i in range(0,4):
@@ -79,14 +69,55 @@ class AIPlayer(Player):
                         other_big_val = placement_area[i][k]
                         other_big_val_loc = (k, i + 6)
             moves.append(other_big_val_loc)
+        print("Placing food at : ",moves)
         return moves
-            
             
 
     #TODO: This
     def getMove(self, currentState):
+        # # START COPIED CODE FROM FoodGatherer.py # #
         myInv=getCurrPlayerInventory(currentState)
         me=currentState.whoseTurn
+
+        #the first time this method is called, the food and tunnel locations
+        #need to be recorded in their respective instance variables
+        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        if (self.myTunnel == None):
+            self.myTunnel = getConstrList(currentState, me, (TUNNEL,))[0]
+        if (self.myFood == None):
+            foods = getConstrList(currentState, None, (FOOD,))
+            self.myFood = foods[0]
+            #find the food closest to the tunnel
+            tunnBestDistSoFar = 1000 #i.e., infinity
+            for food in foods:
+                dist = stepsToReach(currentState, self.myTunnel.coords, food.coords)
+                if (dist < tunnBestDistSoFar):
+                    self.myFood = food
+                    tunnBestDistSoFar = dist
+            
+            # not sure if we need this part
+            # find the foot closest to the hill
+            hillBestDistSoFar = 1000
+            for food in foods:
+                dist = stepsToReach(currentState, myHill.coords, food.coords)
+                if (dist < hillBestDistSoFar):
+                    self.myFood = food
+                    hillBestDistSoFar = dist    
+
+            print("Hill distance: ", hillBestDistSoFar) 
+            print("Tunnel distance: ", tunnBestDistSoFar)   
+
+
+
+        #if the hasn't moved, have her move in place so she will attack
+        myQueen = myInv.getQueen()
+        if (not myQueen.hasMoved):
+            return Move(MOVE_ANT, [myQueen.coords], None)
+
+        # # END COPIED CODE FROM FoodGatherer.py # # 
+
+
+
 
     #TODO: This
     def getAttack(self, currentState, attackingAnt, enemyLocations):
