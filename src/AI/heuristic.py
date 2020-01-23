@@ -9,8 +9,6 @@ from Move import Move
 from GameState import *
 from AIPlayerUtils import *
 
-
-
 class AIPlayer(Player):
     
     def __init__(self, inputPlayerId):
@@ -50,7 +48,7 @@ class AIPlayer(Player):
                         if  hill_dist >= tunn_dist:
                             placement_area_row.append(hill_dist)
                         else: placement_area_row.append(tunn_dist)
-                    else: placement_area_row.append(0)
+                    else: placement_area_row.append(-99)
                 placement_area.append(placement_area_row)
             big_val = 0
             big_val_loc = (0,0)
@@ -59,7 +57,8 @@ class AIPlayer(Player):
                     if placement_area[i][k] > big_val:
                         big_val = placement_area[i][k]
                         big_val_loc = (k, i + 6)
-            placement_area[big_val_loc[0]][big_val_loc[1]-6] = 0
+            # placement_area[big_val_loc[0]][(big_val_loc[1]-6)] = -100
+            placement_area[big_val_loc[1]-6][big_val_loc[0]] = -100
             moves.append(big_val_loc)
             other_big_val = 0
             other_big_val_loc = (0,0)
@@ -68,11 +67,13 @@ class AIPlayer(Player):
                     if placement_area[i][k] > other_big_val:
                         other_big_val = placement_area[i][k]
                         other_big_val_loc = (k, i + 6)
+            placement_area[other_big_val_loc[1]-6][other_big_val_loc[0]] = -100
             moves.append(other_big_val_loc)
+            for row in placement_area:
+                print(row)
         print("Placing food at : ", moves)
         return moves
-        # return [(1,6),(1,6)]
-            
+        # return [(1,6),(1,6)] 
 
     #TODO: This
     def getMove(self, currentState):
@@ -107,7 +108,6 @@ class AIPlayer(Player):
 
             print("Hill distance: ", hillBestDistSoFar) 
             print("Tunnel distance: ", tunnBestDistSoFar)   
-
 
 
         #if the hasn't moved, have her move in place so she will attack
