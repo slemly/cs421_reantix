@@ -24,12 +24,12 @@ class AIPlayer(Player):
             # an opening at the opposite side of the anthill.
             # I am using hardcoded structure placements for now.
             #TODO: make RNG to choose between three good structure setups
-            layout = random.randint(1,7)
+            #layout = random.randint(1,7)
             #if layout == 1:
-                return[(2,1), (7,1),\
-                (0,2), (0,3), (1,3),\
-                (2,3), (3,3), (4,3),\
-                (8,3), (9,3), (9,2)]
+            return[(2,1), (7,1),\
+            (0,2), (0,3), (1,3),\
+            (2,3), (3,3), (4,3),\
+            (8,3), (9,3), (9,2)]
             #elif layout == 2:
                 
             #elif layout == 3:
