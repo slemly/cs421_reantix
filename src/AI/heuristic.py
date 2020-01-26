@@ -24,22 +24,37 @@ class AIPlayer(Player):
             # an opening at the opposite side of the anthill.
             # I am using hardcoded structure placements for now.
             #TODO: make RNG to choose between three good structure setups
-            #layout = random.randint(1,7)
-            #if layout == 1:
-            return[(2,1), (7,1),\
-            (0,2), (0,3), (1,3),\
-            (2,3), (3,3), (4,3),\
-            (8,3), (9,3), (9,2)]
-            #elif layout == 2:
-                
-            #elif layout == 3:
-                
-            #elif layout == 4:
-                
-            #elif layout == 5:
-                
-            #elif layout == 6:
-                 
+            layout = random.randint(1,7)
+            if layout == 1:
+                return[(2,1), (7,1),\
+                (0,2), (0,3), (1,3),\
+                (2,3), (3,3), (4,3),\
+                (8,3), (9,3), (9,2)]
+            elif layout == 2:
+                return[(3,1), (6,2),\
+                (0,0), (0,2), (0,3),\
+                (1,3), (4,3), (9,3),\
+                (8,0), (9,0), (9,1)]
+            elif layout == 3:
+                return[(2,1), (7,1),\
+                (0,0), (0,3), (1,3),\
+                (3,3), (4,3), (5,3),\
+                (6,3), (8,3), (9,3),]
+            elif layout == 4:
+                return[(7,1), (2,1),\
+                (9,2), (9,3), (8,3),\
+                (7,3), (6,3), (5,3),\
+                (1,3), (0,3), (0,2)]
+            elif layout == 5:
+                return[(6,1), (3,2),\
+                (0,0), (0,1), (1,0),\
+                (0,3), (5,3), (9,0),\
+                (8,3), (9,3), (9,2)]
+            elif layout == 6:
+                 return[(7,1), (2,1),\
+                (9,0), (0,3), (1,3),\
+                (3,3), (4,3), (5,3),\
+                (6,3), (8,3), (9,3),]
             #return[(2,1), (7,2),\
             #(1,3),(2,3),(3,3),\
             #(4,3),(5,3),(6,3),\
