@@ -29,7 +29,6 @@ class GameData:
         self.p2 = p2
         self.n = numGames
 
-
 ##
 # Game
 # Description: Keeps track of game logic and manages the play loop.

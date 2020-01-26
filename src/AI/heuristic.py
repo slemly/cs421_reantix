@@ -12,16 +12,14 @@ from AIPlayerUtils import *
 class AIPlayer(Player):
     
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId,"Heuristic")
+        super(AIPlayer, self).__init__(inputPlayerId,"Heuristic")
         self.myFood=None
         self.myTunnel=None
-
     def getPlacement(self, currentState):
         self.myFood=None
         self.myTunnel=None
         if currentState.phase == SETUP_PHASE_1:
-            # grass location coordinates in a row in front,
-            # an opening at the opposite side of the anthill.
+            # grass location coordinates in a row in front, an opening at the opposite side of the anthill.
             # I am using hardcoded structure placements for now.
             #TODO: make RNG to choose between three good structure setups
             return[(2,1), (7,2),\
@@ -57,7 +55,6 @@ class AIPlayer(Player):
                     if placement_area[i][k] > big_val:
                         big_val = placement_area[i][k]
                         big_val_loc = (k, i + 6)
-            # placement_area[big_val_loc[0]][(big_val_loc[1]-6)] = -100
             placement_area[big_val_loc[1]-6][big_val_loc[0]] = -100
             moves.append(big_val_loc)
             other_big_val = 0
@@ -69,20 +66,17 @@ class AIPlayer(Player):
                         other_big_val_loc = (k, i + 6)
             placement_area[other_big_val_loc[1]-6][other_big_val_loc[0]] = -100
             moves.append(other_big_val_loc)
-            for row in placement_area:
-                print(row)
-        print("Placing food at : ", moves)
         return moves
-        # return [(1,6),(1,6)] 
 
     #TODO: This
     def getMove(self, currentState):
         # # START COPIED CODE FROM FoodGatherer.py # #
         myInv=getCurrPlayerInventory(currentState)
         me=currentState.whoseTurn
+        enemy = 1 - me
 
-        #the first time this method is called, the food and tunnel locations
-        #need to be recorded in their respective instance variables
+        # the first time this method is called, the food and tunnel locations
+        # need to be recorded in their respective instance variables
         myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         if (self.myTunnel == None):
             self.myTunnel = getConstrList(currentState, me, (TUNNEL,))[0]
@@ -90,32 +84,94 @@ class AIPlayer(Player):
             foods = getConstrList(currentState, None, (FOOD,))
             self.myFood = foods[0]
             #find the food closest to the tunnel
-            tunnBestDistSoFar = 1000 #i.e., infinity
+            bestDistSoFar = 1000 #i.e., infinity
             for food in foods:
-                dist = stepsToReach(currentState, self.myTunnel.coords, food.coords)
-                if (dist < tunnBestDistSoFar):
+                dist = abs(stepsToReach(currentState, self.myTunnel.coords, food.coords))
+                if (dist <= bestDistSoFar):
                     self.myFood = food
-                    tunnBestDistSoFar = dist
-            
-            # not sure if we need this part
-            # find the foot closest to the hill
-            hillBestDistSoFar = 1000
-            for food in foods:
-                dist = stepsToReach(currentState, myHill.coords, food.coords)
-                if (dist < hillBestDistSoFar):
-                    self.myFood = food
-                    hillBestDistSoFar = dist    
+                    bestDistSoFar = dist
 
-            print("Hill distance: ", hillBestDistSoFar) 
-            print("Tunnel distance: ", tunnBestDistSoFar)   
+        # if I don't have a worker, give up.
+        numAnts = len(myInv.ants)
+        if (numAnts == 1 and myInv.foodCount < 2):
+            return Move(END, None, None)
 
+        workers = getAntList(currentState, me, (WORKER,))
+        myAnts = getAntList(currentState, me)
+        
+        # end turn if workers have moved
+        if (len(workers) < 1): 
+            return Move(END, None, None)
+        else:
+            moveTally = 0
+            for ant in myAnts:
+                if ant.hasMoved:
+                    moveTally +=1
+            if moveTally == len(myAnts) - 1:
+                return Move(END, None, None)
+            # myWorker = workers[0]
+            # if (myWorker.hasMoved):
+            #     return Move(END, None, None)
 
-        #if the hasn't moved, have her move in place so she will attack
+        # if the queen is on the anthill move her
         myQueen = myInv.getQueen()
-        if (not myQueen.hasMoved):
-            return Move(MOVE_ANT, [myQueen.coords], None)
+        if (myQueen.coords == myInv.getAnthill().coords):
+            return Move(MOVE_ANT, [myInv.getQueen().coords, (1,1), (1, 0)], None)
 
+        # if the hasn't moved, have her move in place so she will attack
+        # if (not myQueen.hasMoved):
+            # return Move(MOVE_ANT, [myQueen.coords], None)
         # # END COPIED CODE FROM FoodGatherer.py # # 
+
+        # buy a drone if you have three or fewer of them
+        myDrones = getAntList(currentState, me, (DRONE,))
+        numDrones = len(myDrones)
+        if (myInv.foodCount >= 2 and numDrones <= 3):
+            if (getAntAt(currentState, myInv.getAnthill().coords) is None):
+                return Move(BUILD, [myInv.getAnthill().coords], DRONE)
+        
+        myWorker = getAntList(currentState, me, (WORKER,))[0]
+        enemyInv = getEnemyInv(enemy,currentState) 
+        # move worker towards the tunnel if worker has food
+        if myWorker.hasMoved:
+            if (myWorker.carrying):
+                path = createPathToward(currentState,\
+                                        myWorker.coords,
+                                        self.myTunnel.coords,\
+                                            UNIT_STATS[WORKER][MOVEMENT])
+                return Move(MOVE_ANT, path, None) 
+            else: # if the worker has no food, move toward food
+                path = createPathToward(currentState, myWorker.coords,
+                                    self.myFood.coords,\
+                                            UNIT_STATS[WORKER][MOVEMENT])
+                return Move(MOVE_ANT, path, None)
+
+        
+        enemyHill = enemyInv.getAnthill()
+        enemyQueen = enemyInv.getQueen()
+        enemyWorkers = getAntList(currentState, enemy, (WORKER,))
+        for drone in myDrones:
+            # drone_rand_int = random.randint(1,3)
+            if not drone.hasMoved:
+                if True:
+                    path = createPathToward(currentState, drone.coords, enemyHill.coords,\
+                        UNIT_STATS[DRONE][MOVEMENT])
+                    return (MOVE_ANT, path, None)
+                if enemyHill.ant == None:
+                    path = createPathToward(currentState, drone.coords, enemyHill.coords,\
+                        UNIT_STATS[DRONE][MOVEMENT])
+                    return (MOVE_ANT, path, None)
+                elif len(enemyWorkers) >= 2:
+                    randWorker = enemyWorkers[random.randint(0,len(enemyWorkers)-1)]
+                    path = createPathToward(currentState, drone.coords, \
+                        enemyWorkers[randWorker].coords,\
+                        UNIT_STATS[DRONE][MOVEMENT])
+                    return (MOVE_ANT, path, None)
+                else:
+                    path = createPathToward(currentState, drone.coords, enemyHill.coords,
+                    UNIT_STATS[DRONE][MOVEMENT])
+                    return (MOVE_ANT, path, None)
+        
 
     #TODO: This
     def getAttack(self, currentState, attackingAnt, enemyLocations):

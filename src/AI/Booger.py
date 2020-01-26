@@ -123,7 +123,6 @@ class AIPlayer(Player):
         if (not myQueen.hasMoved):
             return Move(MOVE_ANT, [myQueen.coords], None)
 
-
         #if I have the foos and the anthill is unoccupied then
         #make a drone
         if (myInv.foodCount > 2):
