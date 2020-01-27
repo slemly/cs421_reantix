@@ -118,8 +118,9 @@ class AIPlayer(Player):
         # if I don't have a worker, give up.
         numAnts = len(myInv.ants)
         workers = getAntList(currentState, me, (WORKER,))
+        haveDrones = getAntList(currentState, me, (DRONE,))
         
-        if (len(workers) == 0 and myInv.foodCount == 0):
+        if (len(workers) == 0 and myInv.foodCount == 0 and len(haveDrones) == 0):
             return Move(END, None, None)
         elif(len(workers) == 0 and myInv.foodCount >= 1):
             return Move(BUILD,[myInv.getAnthill().coords], WORKER)
