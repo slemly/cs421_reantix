@@ -19,9 +19,6 @@ class AIPlayer(Player):
         self.myFood=None
         self.myTunnel=None
         if currentState.phase == SETUP_PHASE_1:
-            # grass location coordinates in a row in front, an opening at the opposite side of the anthill.
-            # I am using hardcoded structure placements for now.
-            #TODO: make RNG to choose between three good structure setups
             layout = random.randint(1,7)
             if layout == 1:
                 return[(2,1), (7,1),\
@@ -53,10 +50,6 @@ class AIPlayer(Player):
                 (9,0), (0,3), (1,3),\
                 (3,3), (4,3), (5,3),\
                 (6,3), (8,3), (9,3),]
-            #return[(2,1), (7,2),\
-            #(1,3),(2,3),(3,3),\
-            #(4,3),(5,3),(6,3),\
-            #(7,3),(8,3),(0,3)]
         elif currentState.phase == SETUP_PHASE_2:
             numToPlace = 2
             moves = []
@@ -97,7 +90,7 @@ class AIPlayer(Player):
                         other_big_val_loc = (k, i + 6)
             placement_area[other_big_val_loc[1]-6][other_big_val_loc[0]] = -100
             moves.append(other_big_val_loc)
-        return moves
+            return moves
 
     #TODO: This
     def getMove(self, currentState):
@@ -128,35 +121,34 @@ class AIPlayer(Player):
         
         if (len(workers) == 0 and myInv.foodCount < 2):
             return Move(END, None, None)
-        elif(len(workers)==0 and myInv.foodCount >= 2):
+        elif(len(workers) == 0 and myInv.foodCount >= 2):
             return Move(BUILD,[myInv.getAnthill().coords], WORKER)
 
         myAnts = getAntList(currentState, me)
         
-        # end turn if workers have moved
-        # else:
-        #     moveTally = 0
-        #     for ant in myAnts:
-        #         if ant.hasMoved:
-        #             moveTally +=1
-        #     if moveTally == len(myAnts) - 1:
-        #         return Move(END, None, None)
+        # end turn if worker has moved
         myWorker = workers[0]
         if (myWorker.hasMoved):
             return Move(END, None, None)
 
         # if the queen is on the anthill move her
+        # had to modify this to work for our scenario - SL
         myQueen = myInv.getQueen()
         if (myQueen.coords == myInv.getAnthill().coords):
             # print("MOVING QUEEN")
             return Move(MOVE_ANT, [myInv.getQueen().coords,\
                 (myInv.getQueen().coords[0],myInv.getQueen().coords[1] - 1)], None)
 
-        # if the hasn't moved, have her move in place so she will attack
-        # if (not myQueen.hasMoved):
-            # return Move(MOVE_ANT, [myQueen.coords], None)
-        # # END COPIED CODE FROM FoodGatherer.py # # 
+        # # # END COPIED CODE FROM FoodGatherer.py # # #
 
+        myWorker = getAntList(currentState, me, (WORKER,))[0]
+        enemyInv = getEnemyInv(enemy,currentState) 
+        enemyHill = enemyInv.getAnthill()
+        enemyQueen = enemyInv.getQueen()
+        enemyWorkers = getAntList(currentState, enemy, (WORKER,))
+        
+        
+       
         # buy a drone if you have three or fewer of them
         myDrones = getAntList(currentState, me, (DRONE,))
         numDrones = len(myDrones)
@@ -164,51 +156,46 @@ class AIPlayer(Player):
             if (getAntAt(currentState, myInv.getAnthill().coords) is None):
                 return Move(BUILD, [myInv.getAnthill().coords], DRONE)
         
-        myWorker = getAntList(currentState, me, (WORKER,))[0]
-        enemyInv = getEnemyInv(enemy,currentState) 
+        # send drones to other side of board, just sending to enemy anthill for now
+        for drone in myDrones:
+            if not (drone.hasMoved):
+                drone_xloc = drone.coords[0]
+                drone_yloc = drone.coords[1]
+                if True:
+                    path = createPathToward(currentState, drone.coords, enemyHill.coords,\
+                        UNIT_STATS[DRONE][MOVEMENT])
+                    return Move(MOVE_ANT, path, None)
+                # if enemyHill.ant == None:
+                #     path = createPathToward(currentState, drone.coords, enemyHill.coords,\
+                #         UNIT_STATS[DRONE][MOVEMENT])
+                #     return (MOVE_ANT, path, None)
+                # elif len(enemyWorkers) >= 2:
+                #     randWorker = enemyWorkers[random.randint(0,len(enemyWorkers)-1)]
+                #     path = createPathToward(currentState, drone.coords, \
+                #         enemyWorkers[randWorker].coords,\
+                #         UNIT_STATS[DRONE][MOVEMENT])
+                #     return (MOVE_ANT, path, None)
+                # else:
+                #     path = createPathToward(currentState, drone.coords, enemyHill.coords,
+                #     UNIT_STATS[DRONE][MOVEMENT])
+                #     return (MOVE_ANT, path, None)
+        # return(END, None, None)
+
+
 
         # move worker towards the tunnel if worker has food
+        # DO NOT TOUCH THESE, THEY WORK RIGHT NOW! - SL
         if (myWorker.carrying):
             path = createPathToward(currentState,\
                                     myWorker.coords,
                                     self.myTunnel.coords,\
                                         UNIT_STATS[WORKER][MOVEMENT])
-            # print("MOVING WORKER TO HILL")
             return Move(MOVE_ANT, path, None) 
         else: # if the worker has no food, move toward food
             path = createPathToward(currentState, myWorker.coords,
                                 self.myFood.coords,\
                                         UNIT_STATS[WORKER][MOVEMENT])
-            # print("MOVING WORKER TO FOOD")
             return Move(MOVE_ANT, path, None)
-
-        
-        enemyHill = enemyInv.getAnthill()
-        enemyQueen = enemyInv.getQueen()
-        enemyWorkers = getAntList(currentState, enemy, (WORKER,))
-        for drone in myDrones:
-            if not drone.hasMoved:
-                if True:
-                    path = createPathToward(currentState, drone.coords, enemyHill.coords,\
-                        UNIT_STATS[DRONE][MOVEMENT])
-                    return (MOVE_ANT, path, None)
-                if enemyHill.ant == None:
-                    path = createPathToward(currentState, drone.coords, enemyHill.coords,\
-                        UNIT_STATS[DRONE][MOVEMENT])
-                    return (MOVE_ANT, path, None)
-                elif len(enemyWorkers) >= 2:
-                    randWorker = enemyWorkers[random.randint(0,len(enemyWorkers)-1)]
-                    path = createPathToward(currentState, drone.coords, \
-                        enemyWorkers[randWorker].coords,\
-                        UNIT_STATS[DRONE][MOVEMENT])
-                    return (MOVE_ANT, path, None)
-                else:
-                    path = createPathToward(currentState, drone.coords, enemyHill.coords,
-                    UNIT_STATS[DRONE][MOVEMENT])
-                    return (MOVE_ANT, path, None)
-
-
-        return(END, None, None)
 
     #TODO: This
     def getAttack(self, currentState, attackingAnt, enemyLocations):
