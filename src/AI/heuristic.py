@@ -124,30 +124,33 @@ class AIPlayer(Player):
 
         # if I don't have a worker, give up.
         numAnts = len(myInv.ants)
-        if (numAnts == 1 and myInv.foodCount < 2):
-            return Move(END, None, None)
-
         workers = getAntList(currentState, me, (WORKER,))
+        
+        if (len(workers) == 0 and myInv.foodCount < 2):
+            return Move(END, None, None)
+        elif(len(workers)==0 and myInv.foodCount >= 2):
+            return Move(BUILD,[myInv.getAnthill().coords], WORKER)
+
         myAnts = getAntList(currentState, me)
         
         # end turn if workers have moved
-        if (len(workers) < 1): 
+        # else:
+        #     moveTally = 0
+        #     for ant in myAnts:
+        #         if ant.hasMoved:
+        #             moveTally +=1
+        #     if moveTally == len(myAnts) - 1:
+        #         return Move(END, None, None)
+        myWorker = workers[0]
+        if (myWorker.hasMoved):
             return Move(END, None, None)
-        else:
-            moveTally = 0
-            for ant in myAnts:
-                if ant.hasMoved:
-                    moveTally +=1
-            if moveTally == len(myAnts) - 1:
-                return Move(END, None, None)
-            # myWorker = workers[0]
-            # if (myWorker.hasMoved):
-            #     return Move(END, None, None)
 
         # if the queen is on the anthill move her
         myQueen = myInv.getQueen()
         if (myQueen.coords == myInv.getAnthill().coords):
-            return Move(MOVE_ANT, [myInv.getQueen().coords, (1,1), (1, 0)], None)
+            # print("MOVING QUEEN")
+            return Move(MOVE_ANT, [myInv.getQueen().coords,\
+                (myInv.getQueen().coords[0],myInv.getQueen().coords[1] - 1)], None)
 
         # if the hasn't moved, have her move in place so she will attack
         # if (not myQueen.hasMoved):
@@ -163,26 +166,27 @@ class AIPlayer(Player):
         
         myWorker = getAntList(currentState, me, (WORKER,))[0]
         enemyInv = getEnemyInv(enemy,currentState) 
+
         # move worker towards the tunnel if worker has food
-        if myWorker.hasMoved:
-            if (myWorker.carrying):
-                path = createPathToward(currentState,\
-                                        myWorker.coords,
-                                        self.myTunnel.coords,\
-                                            UNIT_STATS[WORKER][MOVEMENT])
-                return Move(MOVE_ANT, path, None) 
-            else: # if the worker has no food, move toward food
-                path = createPathToward(currentState, myWorker.coords,
-                                    self.myFood.coords,\
-                                            UNIT_STATS[WORKER][MOVEMENT])
-                return Move(MOVE_ANT, path, None)
+        if (myWorker.carrying):
+            path = createPathToward(currentState,\
+                                    myWorker.coords,
+                                    self.myTunnel.coords,\
+                                        UNIT_STATS[WORKER][MOVEMENT])
+            # print("MOVING WORKER TO HILL")
+            return Move(MOVE_ANT, path, None) 
+        else: # if the worker has no food, move toward food
+            path = createPathToward(currentState, myWorker.coords,
+                                self.myFood.coords,\
+                                        UNIT_STATS[WORKER][MOVEMENT])
+            # print("MOVING WORKER TO FOOD")
+            return Move(MOVE_ANT, path, None)
 
         
         enemyHill = enemyInv.getAnthill()
         enemyQueen = enemyInv.getQueen()
         enemyWorkers = getAntList(currentState, enemy, (WORKER,))
         for drone in myDrones:
-            # drone_rand_int = random.randint(1,3)
             if not drone.hasMoved:
                 if True:
                     path = createPathToward(currentState, drone.coords, enemyHill.coords,\
@@ -202,12 +206,14 @@ class AIPlayer(Player):
                     path = createPathToward(currentState, drone.coords, enemyHill.coords,
                     UNIT_STATS[DRONE][MOVEMENT])
                     return (MOVE_ANT, path, None)
-        
+
+
+        return(END, None, None)
 
     #TODO: This
     def getAttack(self, currentState, attackingAnt, enemyLocations):
         return enemyLocations[0]
 
-    #TODO: This
+    #TODO: This, but not this HW assignment
     def registerWin(self, hasWon):
         pass
