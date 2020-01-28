@@ -187,14 +187,13 @@ class AIPlayer(Player):
         # DO NOT TOUCH THESE, THEY WORK RIGHT NOW! - SL
         tunnelDist = approxDist(myWorker.coords, self.myTunnel.coords)
         hillDist = approxDist(myWorker.coords, myInv.getAnthill().coords)
-        bestDist = tunnelDist - hillDist
-        if (myWorker.carrying and (bestDist < 0)):
+        if (myWorker.carrying and (tunnelDist =< hillDist)):
             path = createPathToward(currentState,\
                                     myWorker.coords,
                                     self.myTunnel.coords,\
                                         UNIT_STATS[WORKER][MOVEMENT])
             return Move(MOVE_ANT, path, None) 
-        elif(myWorker.carrying and (bestDist >= 0)):
+        elif(myWorker.carrying and (tunnelDist > hillDist)):
             path = createPathToward(currentState,\
                                     myWorker.coords,
                                     myInv.getAnthill().coords,\
