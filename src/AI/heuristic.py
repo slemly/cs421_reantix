@@ -185,7 +185,7 @@ class AIPlayer(Player):
 
         # move worker towards the tunnel if worker has food
         # DO NOT TOUCH THESE, THEY WORK RIGHT NOW! - SL
-        tunnelDist = approxDist(myWorker.coords, self.myTunnel.coords)
+        tunnelDist = approxDist(myWorker.coords, myInv.getTunnel().coords)
         hillDist = approxDist(myWorker.coords, myInv.getAnthill().coords)
         bestDist = tunnelDist - hillDist
         if (myWorker.carrying and (bestDist >= 0)):
