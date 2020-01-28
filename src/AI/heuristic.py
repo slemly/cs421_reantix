@@ -134,11 +134,12 @@ class AIPlayer(Player):
         # if the queen is on the anthill move her
         # had to modify this to work for our scenario - SL
         myQueen = myInv.getQueen()
-        #if (myQueen.coords == myInv.getAnthill().coords):
+        if (myQueen.coords == myInv.getAnthill().coords):
             # print("MOVING QUEEN")
-        if (not myQueen.hasMoved):
             return Move(MOVE_ANT, [myInv.getQueen().coords,\
                 (myInv.getAnthill().coords[0],myInv.getAnthill().coords[1] - 1)], None)
+        elif (not myQueen.hasMoved):
+            return Move(MOVE_ANT, [myQueen.coords], None)
 
         # # # END COPIED CODE FROM FoodGatherer.py # # #
 
