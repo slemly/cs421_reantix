@@ -179,11 +179,11 @@ class AIPlayer(Player):
         for drone in myDrones:
             if not (drone.hasMoved):
                 enemyHillLoc = Location(enemyHill.coords)
-                if enemyHillLoc.ant == None and len(enemyWorkers) <= 1:
+                if enemyHillLoc.ant == None and len(enemyWorkers) < 1:
                     path = createPathToward(currentState, drone.coords, enemyHill.coords,\
                         UNIT_STATS[DRONE][MOVEMENT])
                     return Move(MOVE_ANT, path, None)
-                elif len(enemyWorkers) > 0: # if there's more than one worker...cull the herd
+                elif len(enemyWorkers) >= 1: # if there's more than one worker...cull the herd
                     targetWorker = enemyWorkers[0]
                     path = createPathToward(currentState, drone.coords, \
                         targetWorker.coords,\
