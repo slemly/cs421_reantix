@@ -185,10 +185,16 @@ class AIPlayer(Player):
 
         # move worker towards the tunnel if worker has food
         # DO NOT TOUCH THESE, THEY WORK RIGHT NOW! - SL
-        if (myWorker.carrying):
+        if (myWorker.carrying and approxDist(myWorker.coords, self.myTunnel.coords)=<approxDist(myWorker.coords, self.myAnthill.coords)):
             path = createPathToward(currentState,\
                                     myWorker.coords,
                                     self.myTunnel.coords,\
+                                        UNIT_STATS[WORKER][MOVEMENT])
+            return Move(MOVE_ANT, path, None) 
+        elif(myWorker.carrying and approxDist(myWorker.coords, self.myTunnel.coords)>approxDist(myWorker.coords, self.myAnthill.coords)):
+            path = createPathToward(currentState,\
+                                    myWorker.coords,
+                                    self.myAnthill.coords,\
                                         UNIT_STATS[WORKER][MOVEMENT])
             return Move(MOVE_ANT, path, None) 
         else: # if the worker has no food, move toward food
