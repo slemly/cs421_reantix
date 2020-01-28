@@ -12,7 +12,7 @@ from AIPlayerUtils import *
 class AIPlayer(Player):
     
     def __init__(self, inputPlayerId):
-        super(AIPlayer, self).__init__(inputPlayerId,"Heuristic")
+        super(AIPlayer, self).__init__(inputPlayerId,"RushB")
         self.myFood=None
         self.myTunnel=None
     def getPlacement(self, currentState):
