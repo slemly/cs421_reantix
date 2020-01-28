@@ -138,7 +138,9 @@ class AIPlayer(Player):
             # print("MOVING QUEEN")
             return Move(MOVE_ANT, [myInv.getQueen().coords,\
                 (myInv.getAnthill().coords[0],myInv.getAnthill().coords[1] - 1)], None)
-        elif (not myQueen.hasMoved):
+        
+        # move the queen to the same spot so that she can defend the anthill
+        if (not myQueen.hasMoved):
             return Move(MOVE_ANT, [myQueen.coords], None)
 
         # # # END COPIED CODE FROM FoodGatherer.py # # #
