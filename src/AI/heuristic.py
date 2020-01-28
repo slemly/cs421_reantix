@@ -19,46 +19,16 @@ class AIPlayer(Player):
         self.myFood=None
         self.myTunnel=None
         if currentState.phase == SETUP_PHASE_1:
-            layout = random.randint(1,7)
-            if layout == 1:
-                return[(2,1), (7,1),\
-                (0,2), (0,3), (1,3),\
-                (2,3), (3,3), (4,3),\
-                (8,3), (9,3), (9,2)]
-            elif layout == 2:
-                return[(3,1), (6,2),\
-                (0,0), (0,2), (0,3),\
-                (1,3), (4,3), (9,3),\
-                (8,0), (9,0), (9,1)]
-            elif layout == 3:
-                return[(2,1), (7,1),\
-                (0,0), (0,3), (1,3),\
-                (3,3), (4,3), (5,3),\
-                (6,3), (8,3), (9,3),]
-            elif layout == 4:
-                return[(7,1), (2,1),\
-                (9,2), (9,3), (8,3),\
-                (7,3), (6,3), (5,3),\
-                (1,3), (0,3), (0,2)]
-            elif layout == 5:
-                return[(6,1), (3,2),\
-                (0,0), (0,1), (1,0),\
-                (0,3), (5,3), (9,0),\
-                (8,3), (9,3), (9,2)]
-            elif layout == 6:
-                 return[(7,1), (2,1),\
-                (9,0), (0,3), (1,3),\
-                (3,3), (4,3), (5,3),\
-                (6,3), (8,3), (9,3),]
+            return self.determineLayout() # call RNG helper function for layout
         elif currentState.phase == SETUP_PHASE_2:
             numToPlace = 2
             moves = []
             # find enemy anthill and tunnel locations
             enemyInv = getEnemyInv(self, currentState)
-            enemyHill = enemyInv.getAnthill() #not sure if this is proper syntax
-            enemyTunn = enemyInv.getTunnels() #not sure if this is proper syntax
-            #Construct a representation of the enemy's territory;
-            #Iterate through it and find locations furthest from tunnels 
+            enemyHill = enemyInv.getAnthill()
+            enemyTunn = enemyInv.getTunnels() 
+            # Construct a representation of the enemy's territory;
+            # Iterate through it and find locations furthest from tunnels 
             # and anthills at which food can be placed
             placement_area = []
             for i in range(6,10):
@@ -70,10 +40,11 @@ class AIPlayer(Player):
                         if  hill_dist >= tunn_dist:
                             placement_area_row.append(hill_dist)
                         else: placement_area_row.append(tunn_dist)
-                    else: placement_area_row.append(-99)
+                    # if there is a structure present, give an extremely low weight to the location
+                    else: placement_area_row.append(-99) 
                 placement_area.append(placement_area_row)
-            big_val = 0
-            big_val_loc = (0,0)
+            big_val = 0 # highest weighted location value
+            big_val_loc = (0,0) # highest weighted location coordinates
             for i in range(0,4):
                 for k in range(0,10):
                     if placement_area[i][k] > big_val:
@@ -92,7 +63,43 @@ class AIPlayer(Player):
             moves.append(other_big_val_loc)
             return moves
 
-    #TODO: This
+    # RNG for layout determination.
+    #  Extracted from above function for verbosity
+    def determineLayout(self):
+        layout = random.randint(1,6)
+        if layout == 1:
+            return[(2,1), (7,1),\
+            (0,2), (0,3), (1,3),\
+            (2,3), (3,3), (4,3),\
+            (8,3), (9,3), (9,2)]
+        elif layout == 2:
+            return[(3,1), (6,2),\
+            (0,0), (0,2), (0,3),\
+            (1,3), (4,3), (9,3),\
+            (8,0), (9,0), (9,1)]
+        elif layout == 3:
+            return[(2,1), (7,1),\
+            (0,0), (0,3), (1,3),\
+            (3,3), (4,3), (5,3),\
+            (6,3), (8,3), (9,3),]
+        elif layout == 4:
+            return[(7,1), (2,1),\
+            (9,2), (9,3), (8,3),\
+            (7,3), (6,3), (5,3),\
+            (1,3), (0,3), (0,2)]
+        elif layout == 5:
+            return[(6,1), (3,2),\
+            (0,0), (0,1), (1,0),\
+            (0,3), (5,3), (9,0),\
+            (8,3), (9,3), (9,2)]
+        elif layout == 6:
+                 return[(7,1), (2,1),\
+                (9,0), (0,3), (1,3),\
+                (3,3), (4,3), (5,3),\
+                (6,3), (8,3), (9,3),]
+
+    # dictates movement logic for agent. 
+    # Various movements are determined by sensor cases in this function
     def getMove(self, currentState):
         # # START COPIED CODE FROM FoodGatherer.py # #
         myInv=getCurrPlayerInventory(currentState)
@@ -118,13 +125,12 @@ class AIPlayer(Player):
         # if I don't have a worker, give up.
         numAnts = len(myInv.ants)
         workers = getAntList(currentState, me, (WORKER,))
+        myAnts = getAntList(currentState, me)
         
         if (len(workers) == 0 and myInv.foodCount < 1):
             return Move(END, None, None)
         elif(len(workers) == 0 and myInv.foodCount >= 1):
             return Move(BUILD,[myInv.getAnthill().coords], WORKER)
-
-        myAnts = getAntList(currentState, me)
         
         # end turn if worker has moved
         myWorker = workers[0]
@@ -135,9 +141,9 @@ class AIPlayer(Player):
         # had to modify this to work for our scenario - SL
         myQueen = myInv.getQueen()
         if (myQueen.coords == myInv.getAnthill().coords):
-            # print("MOVING QUEEN")
             return Move(MOVE_ANT, [myInv.getQueen().coords,\
-                (myInv.getAnthill().coords[0],myInv.getAnthill().coords[1] - 1)], None)
+                    (myInv.getAnthill().coords[0],\
+                    myInv.getAnthill().coords[1] - 1)], None)
         
         # move the queen to the same spot so that she can defend the anthill
         if (not myQueen.hasMoved):
@@ -145,48 +151,50 @@ class AIPlayer(Player):
 
         # # # END COPIED CODE FROM FoodGatherer.py # # #
 
+        # in case our queen moves off the hill onto some food,
+        #  we move her off the food by taking a step to the right
+        foods = getConstrList(currentState, None, (FOOD,))
+        for food in foods:
+            if food.coords == myQueen.coords:
+                return Move(MOVE_ANT, [myQueen.coords,\
+                     (myQueen.coords[0]-1, myQueen.coords[1])], None)
+
+        # some good pointers to use
         myWorker = getAntList(currentState, me, (WORKER,))[0]
         enemyInv = getEnemyInv(enemy,currentState) 
         enemyHill = enemyInv.getAnthill()
         enemyQueen = enemyInv.getQueen()
         enemyWorkers = getAntList(currentState, enemy, (WORKER,))
-        
-        
        
         # buy a drone if you have three or fewer of them
         myDrones = getAntList(currentState, me, (DRONE,))
         numDrones = len(myDrones)
-        if (myInv.foodCount >= 2 and numDrones <= 3):
+        if (myInv.foodCount >= 2 and numDrones <= 5):
             if (getAntAt(currentState, myInv.getAnthill().coords) is None):
                 return Move(BUILD, [myInv.getAnthill().coords], DRONE)
         
-        # send drones to other side of board, just sending to enemy anthill for now
+        # send drones to other side of board, 
+        # drones will target the enemy anthill if it is unoccupied
+        # if anthill is occupied, drones will kill enemy workers
         for drone in myDrones:
             if not (drone.hasMoved):
-                drone_xloc = drone.coords[0]
-                drone_yloc = drone.coords[1]
-                if True:
+                enemyHillLoc = Location(enemyHill.coords)
+                if enemyHillLoc.ant == None and len(enemyWorkers) <= 1:
                     path = createPathToward(currentState, drone.coords, enemyHill.coords,\
                         UNIT_STATS[DRONE][MOVEMENT])
                     return Move(MOVE_ANT, path, None)
-                # if enemyHill.ant == None:
-                #     path = createPathToward(currentState, drone.coords, enemyHill.coords,\
-                #         UNIT_STATS[DRONE][MOVEMENT])
-                #     return (MOVE_ANT, path, None)
-                # elif len(enemyWorkers) >= 2:
-                #     randWorker = enemyWorkers[random.randint(0,len(enemyWorkers)-1)]
-                #     path = createPathToward(currentState, drone.coords, \
-                #         enemyWorkers[randWorker].coords,\
-                #         UNIT_STATS[DRONE][MOVEMENT])
-                #     return (MOVE_ANT, path, None)
-                # else:
-                #     path = createPathToward(currentState, drone.coords, enemyHill.coords,
-                #     UNIT_STATS[DRONE][MOVEMENT])
-                #     return (MOVE_ANT, path, None)
-        # return(END, None, None)
+                elif len(enemyWorkers) > 0: # if there's more than one worker...cull the herd
+                    targetWorker = enemyWorkers[0]
+                    path = createPathToward(currentState, drone.coords, \
+                        targetWorker.coords,\
+                        UNIT_STATS[DRONE][MOVEMENT])
+                    return Move(MOVE_ANT, path, None)
+                else: # base case is to attack hill
+                    path = createPathToward(currentState, drone.coords, enemyHill.coords,
+                    UNIT_STATS[DRONE][MOVEMENT])
+                    return Move(MOVE_ANT, path, None)
 
-
-
+        
         # move worker towards the tunnel if worker has food
         # DO NOT TOUCH THESE, THEY WORK RIGHT NOW! - SL
         if (myWorker.carrying):
@@ -200,6 +208,7 @@ class AIPlayer(Player):
                                 self.myFood.coords,\
                                         UNIT_STATS[WORKER][MOVEMENT])
             return Move(MOVE_ANT, path, None)
+        return(END, None, None)
 
     #TODO: This
     def getAttack(self, currentState, attackingAnt, enemyLocations):
