@@ -195,7 +195,7 @@ class AIPlayer(Player):
         elif(myWorker.carrying and (tunnelDist < 0)):
             path = createPathToward(currentState,\
                                     myWorker.coords,
-                                    self.myAnthill.coords,\
+                                    myInv.getAnthill().coords,\
                                         UNIT_STATS[WORKER][MOVEMENT])
             return Move(MOVE_ANT, path, None) 
         else: # if the worker has no food, move toward food
