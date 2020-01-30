@@ -119,6 +119,21 @@ class AIPlayer(Player):
         return enemyLocations[random.randint(0, len(enemyLocations) - 1)]
 
     ##
+    # TODO: Complete this function.
+    # 
+    ##
+    def heuristicStepsToGoal(self, currentState):
+        pass
+
+    ##
+    #TODO: Complete this function.
+    #
+    ##
+    def bestMove():
+        pass
+
+
+    ##
     #registerWin
     #
     # This agent doens't learn
