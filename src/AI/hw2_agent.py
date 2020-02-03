@@ -123,7 +123,87 @@ class AIPlayer(Player):
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        pass
+        state = currentState.fastclone()
+        steps = 0
+
+        #it's me!
+        me = myState.whoseTurn
+
+        #fetching constructions
+        tunnels = getConstrList(myState, types = (TUNNEL,))
+        hills = getConstrList(myState, types = (ANTHILL,))
+        foods = getConstrList(myState, None, (FOOD,))
+
+
+        #finding out what belongs to whom
+        myInv = getCurrPlayerInventory(myState)
+        myFood = myInv.foodCount
+        myTunnel = tunnels[1] if (tunnels[0].coords[1] > 5) else tunnels[0]
+        myHill = hills[1] if (hills[0].coords[1] > 5) else hills[0]
+        myWorkers = getAntList(myState, me, (WORKER,))
+        mySoldiers = getAntList(myState, me, (SOLDIER,))
+        myRSoldiers = getAntList(myState, me, (R_SOLDIER,))
+        myDrones = getAntList(myState, me, (DRONE,))
+
+
+        enemyInv = getEnemyInv(self, myState)
+        enemyTunnel = tunnels[0] if (myTunnel is tunnels[1]) else tunnels[1]
+        enemyHill = hills[1] if (myHill is hills[0]) else hills[0]
+        enemyWorkers = getAntList(myState, abs(me - 1), (WORKER,))
+        ememySoldiers = getAntList(myState, abs(me - 1), (SOLDIER,))
+        enemyRSoldiers = getAntList(myState, abs(me - 1), (R_SOLDIER,))
+        enemyDrones = getAntList(myState, abs(me - 1), (DRONE,))
+
+        foodDist = 9999
+                foodTurns = 0
+                isTunnel = False
+
+                for worker in myWorkers:
+                if worker.carrying:
+                    #optimise food deposit distance
+                    distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
+                    distToHill = stepsToReach(myState, worker.coords, myHill.coords)
+                    goToTunnel = True if distToTunnel < distToHill else False
+                    foodDist = min(distToTunnel, distToHill)
+                    #Otherwise, we want to move toward the food
+                else:
+                    distToFood = []
+                    for food in foods:
+                        distToFood.append(stepsToReach(myState, w.coords, food.coords))
+                        closestFoodDist = 9999
+                        optFood = 9999
+                        for i in range(len(distToFood)):
+                          if distanceToFood[i] < closestFood:
+                            closestFoodDist = distToFood[i]
+                            optFood = i
+                        distanceToTunnel = stepsToReach(myState, foods[idx].coords, myTunnel.coords)
+                        distanceToHill = stepsToReach(myState, foods[idx].coords, myHill.coords)
+                        closestFoodDist = min(distanceToTunnel, distanceToHill) + optFood
+                        foodDist = closestFoodDist
+
+        #aiming for a win through offense
+        dist = 9999
+        for drone in myDrones:
+            if len(enemyWorkers) == 0:
+                dist = stepsToReach(myState, ant.coords, enemyHill.coords)
+            else:
+                dist = stepsToReach(myState, ant.coords, enemyWorkers[0].coords) + 10
+
+        for soldier in mySoldiers:
+            for drone in enemyDrones:
+                if len(enemyDrones) != 0:
+                    dist = stepsToReach(myState, soldier.coords, enemyHill.coords)
+                else:
+                    dist = stepsToReach(myState, soldier.coords, drone.coords)
+
+        for worker in enemyWorkers:
+            howManySteps = stepsToReach(myState, ant.coords, worker.coords)
+            steps += howManySteps
+
+
+
+              return steps
+
 
     ##
     #TODO: Complete this function.
