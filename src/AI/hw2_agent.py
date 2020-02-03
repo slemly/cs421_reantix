@@ -208,9 +208,16 @@ class AIPlayer(Player):
     #TODO: Complete this function.
     #
     ##
-    def bestMove():
+    def bestMove(self, nodeList):
+        lowestEvalValue = 9999999
+        bestNode = None
+        for node in nodeList:
+            if node.evalOfState < lowestEvalValue:
+                lowestEvalValue = node.evalOfState
+                bestNode = node
+        return node
 
-        pass
+        
 
 
     ##
