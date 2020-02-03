@@ -29,7 +29,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "Random")
+        super(AIPlayer,self).__init__(inputPlayerId, "hw2_agent")
     
     ##
     #getPlacement
@@ -46,6 +46,7 @@ class AIPlayer(Player):
     #Return: The coordinates of where the construction is to be placed
     ##
     def getPlacement(self, currentState):
+        print("ALJFHKSAJGFKSNOIUABOUFB")
         numToPlace = 0
         #implemented by students to return their next move
         if currentState.phase == SETUP_PHASE_1:    #stuff on my side
@@ -123,7 +124,7 @@ class AIPlayer(Player):
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        state = currentState.fastclone()
+        myState = currentState.fastclone()
         steps = 0
 
         #it's me!
@@ -154,26 +155,26 @@ class AIPlayer(Player):
         enemyRSoldiers = getAntList(myState, abs(me - 1), (R_SOLDIER,))
         enemyDrones = getAntList(myState, abs(me - 1), (DRONE,))
 
-        foodDist = 9999
-                foodTurns = 0
-                isTunnel = False
+        foodDist = 99999
+        foodTurns = 0
+        isTunnel = False
 
-                for worker in myWorkers:
-                if worker.carrying:
-                    #optimise food deposit distance
-                    distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
-                    distToHill = stepsToReach(myState, worker.coords, myHill.coords)
-                    goToTunnel = True if distToTunnel < distToHill else False
-                    foodDist = min(distToTunnel, distToHill)
-                    #Otherwise, we want to move toward the food
-                else:
-                    distToFood = []
-                    for food in foods:
-                        distToFood.append(stepsToReach(myState, w.coords, food.coords))
-                        closestFoodDist = 9999
-                        optFood = 9999
-                        for i in range(len(distToFood)):
-                          if distanceToFood[i] < closestFood:
+        for worker in myWorkers:
+            if worker.carrying:
+                #optimise food deposit distance
+                distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
+                distToHill = stepsToReach(myState, worker.coords, myHill.coords)
+                goToTunnel = True if distToTunnel < distToHill else False
+                foodDist = min(distToTunnel, distToHill)
+                #Otherwise, we want to move toward the food
+            else:
+                distToFood = []
+                for food in foods:
+                    distToFood.append(stepsToReach(myState, w.coords, food.coords))
+                    closestFoodDist = 99999
+                    optFood = 99999
+                    for i in range(len(distToFood)):
+                        if distanceToFood[i] < closestFood:
                             closestFoodDist = distToFood[i]
                             optFood = i
                         distanceToTunnel = stepsToReach(myState, foods[idx].coords, myTunnel.coords)
@@ -182,7 +183,7 @@ class AIPlayer(Player):
                         foodDist = closestFoodDist
 
         #aiming for a win through offense
-        dist = 9999
+        dist = 99999
         for drone in myDrones:
             if len(enemyWorkers) == 0:
                 dist = stepsToReach(myState, ant.coords, enemyHill.coords)
@@ -199,10 +200,8 @@ class AIPlayer(Player):
         for worker in enemyWorkers:
             howManySteps = stepsToReach(myState, ant.coords, worker.coords)
             steps += howManySteps
-
-
-
-              return steps
+        
+        return steps
 
 
     ##
@@ -210,6 +209,7 @@ class AIPlayer(Player):
     #
     ##
     def bestMove():
+
         pass
 
 
@@ -221,3 +221,14 @@ class AIPlayer(Player):
     def registerWin(self, hasWon):
         #method templaste, not implemented
         pass
+
+
+class moveNode():
+    def __init__(self, currState, moveToMake, nextState, depth, parent, evalOfState):
+        self.moveToMake = moveToMake
+        self.currState = currState
+        self.nextState = nextState
+        self.depth = depth
+        self.parent = None
+        self.evalOfState = evalOfState
+
