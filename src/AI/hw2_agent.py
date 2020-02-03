@@ -190,8 +190,8 @@ class AIPlayer(Player):
                         if distanceToFood[i] < closestFood:
                             closestFoodDist = distToFood[i]
                             optFood = i
-                        distanceToTunnel = stepsToReach(myState, foods[idx].coords, myTunnel.coords)
-                        distanceToHill = stepsToReach(myState, foods[idx].coords, myHill.coords)
+                        distanceToTunnel = stepsToReach(myState, foods[optFood].coords, myTunnel.coords)
+                        distanceToHill = stepsToReach(myState, foods[optFood].coords, myHill.coords)
                         closestFoodDist = min(distanceToTunnel, distanceToHill) + optFood
                         foodDist = closestFoodDist
 
