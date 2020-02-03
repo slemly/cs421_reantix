@@ -97,6 +97,19 @@ class AIPlayer(Player):
     ##
     def getMove(self, currentState):
         moves = listAllLegalMoves(currentState)
+        # create a node for every move
+        depth = 0
+        moveNodeList = []
+        for move in moves:
+            # generate the next state that would happen based upon a given move
+            nextState = getNextState(currentState, move)
+            # evaluate that state using our heuristic
+            nextStateEval = self.heursticStepsToGoal(nextState)
+            #create a node object using what we have done so far
+            newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
+            nodeMoveList.append(newMoveNode)
+
+
         selectedMove = moves[random.randint(0,len(moves) - 1)];
 
         #don't do a build move if there are already 3+ ants
@@ -166,11 +179,11 @@ class AIPlayer(Player):
                 distToHill = stepsToReach(myState, worker.coords, myHill.coords)
                 goToTunnel = True if distToTunnel < distToHill else False
                 foodDist = min(distToTunnel, distToHill)
-                #Otherwise, we want to move toward the food
+            #Otherwise, we want to move toward the food
             else:
                 distToFood = []
                 for food in foods:
-                    distToFood.append(stepsToReach(myState, w.coords, food.coords))
+                    distToFood.append(stepsToReach(myState, worker.coords, food.coords))
                     closestFoodDist = 99999
                     optFood = 99999
                     for i in range(len(distToFood)):
@@ -186,21 +199,21 @@ class AIPlayer(Player):
         dist = 99999
         for drone in myDrones:
             if len(enemyWorkers) == 0:
-                dist = stepsToReach(myState, ant.coords, enemyHill.coords)
+                droneDist = stepsToReach(myState, drone.coords, enemyHill.coords)
             else:
-                dist = stepsToReach(myState, ant.coords, enemyWorkers[0].coords) + 10
-
-        for soldier in mySoldiers:
-            for drone in enemyDrones:
-                if len(enemyDrones) != 0:
-                    dist = stepsToReach(myState, soldier.coords, enemyHill.coords)
-                else:
-                    dist = stepsToReach(myState, soldier.coords, drone.coords)
-
-        for worker in enemyWorkers:
-            howManySteps = stepsToReach(myState, ant.coords, worker.coords)
-            steps += howManySteps
+                droneDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
         
+        # Target enemy drones with soldiers
+        for soldier in mySoldiers:
+            for enemyDrone in enemyDrones:
+                if len(enemyDrones) == 0:
+                    soldierDist = stepsToReach(myState, soldier.coords, enemyHill.coords)
+                else:
+                    soldierDist = stepsToReach(myState, soldier.coords, enemyDrone.coords)
+        # for worker in enemyWorkers:
+        #     howManySteps = stepsToReach(myState, ant.coords, worker.coords)
+        #     steps += howManySteps
+        steps = 
         return steps
 
 
@@ -230,7 +243,7 @@ class AIPlayer(Player):
         pass
 
 
-class moveNode():
+class MoveNode():
     def __init__(self, currState, moveToMake, nextState, depth, parent, evalOfState):
         self.moveToMake = moveToMake
         self.currState = currState
