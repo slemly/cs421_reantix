@@ -177,6 +177,7 @@ class AIPlayer(Player):
         ememySoldiers = getAntList(myState, abs(me - 1), (SOLDIER,))
         enemyRSoldiers = getAntList(myState, abs(me - 1), (R_SOLDIER,))
         enemyDrones = getAntList(myState, abs(me - 1), (DRONE,))
+        enemyQueen = enemyInv.getQueen()
 
         foodDist = 99999
         foodTurns = 0
@@ -204,22 +205,28 @@ class AIPlayer(Player):
                         distanceToHill = stepsToReach(myState, foods[optFood].coords, myHill.coords)
                         closestFoodDist = min(distanceToTunnel, distanceToHill) + optFood
                         foodDist = closestFoodDist
+        steps += foodDist * (11 - myInv.foodCount)
 
         #aiming for a win through offense
-        dist = 99999
+        attackDist = 99999
         for drone in myDrones:
             if len(enemyWorkers) == 0:
-                droneDist = stepsToReach(myState, drone.coords, enemyHill.coords)
+                attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
+                steps += attackDist
             else:
-                droneDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
-        
+                attackDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
+                if attackDist < stepsToReach(myState, drone.coords, enemyQueen.coords):
+                    steps += attackDist
+                else:
+                    steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
+
         # Target enemy drones with soldiers
         for soldier in mySoldiers:
             for enemyDrone in enemyDrones:
                 if len(enemyDrones) == 0:
                     soldierDist = stepsToReach(myState, soldier.coords, enemyHill.coords)
                 else:
-                    soldierDist = stepsToReach(myState, soldier.coords, enemyDrone.coords)
+                    soldierDist = stepsToReach(myState, soldier.coords, .coords)
         # for worker in enemyWorkers:
         #     howManySteps = stepsToReach(myState, ant.coords, worker.coords)
         #     steps += howManySteps
