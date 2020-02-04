@@ -198,13 +198,10 @@ class AIPlayer(Player):
                     closestFoodDist = 99999
                     optFood = 99999
                     for i in range(len(distToFood)):
-                        if distanceToFood[i] < closestFood:
+                        if distToFood[i] < closestFoodDist:
                             closestFoodDist = distToFood[i]
                             optFood = i
-                        distanceToTunnel = stepsToReach(myState, foods[optFood].coords, myTunnel.coords)
-                        distanceToHill = stepsToReach(myState, foods[optFood].coords, myHill.coords)
-                        closestFoodDist = min(distanceToTunnel, distanceToHill) + optFood
-                        foodDist = closestFoodDist
+                foodDist = stepsToReach(myState, worker.coords, i.coords)
         steps += foodDist * (11 - myInv.foodCount)
 
         #aiming for a win through offense
@@ -230,7 +227,6 @@ class AIPlayer(Player):
         # for worker in enemyWorkers:
         #     howManySteps = stepsToReach(myState, ant.coords, worker.coords)
         #     steps += howManySteps
-        steps = 
         return steps
 
 
