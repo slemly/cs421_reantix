@@ -110,14 +110,6 @@ class AIPlayer(Player):
         
         #now iterate through all created nodes in a list and determine which has the lowest cost
         # or would get you to the best gamestate
-        selectedMove = None
-        # nodesWithEqualEvaluations = {}
-        # moveKeys = nodesWithEqualEvaluations.keys()
-
-        # this chunk creates a hashtable with keys = heuristic scores and values = moves to make.
-        # The lowest key in the table is then found and a move from the list corresponding to that key is
-        # randomly selected. 
-
         selectedMove = (self.bestMove(moveNodeList)).moveToMake
 
         # for key in moveKeys:
@@ -185,6 +177,17 @@ class AIPlayer(Player):
         foodTurns = 0
         isTunnel = False
 
+        if myQueen.health == 0:
+            steps += 999999999
+        if myQueen.coords == myHill.coords:
+            steps += 50
+        for food in allFoods:
+            if myQueen.coords == food.coords:
+                steps += 20
+        if myFoodCount >= 4 and len(myAnts) < 3:
+            steps += 15
+        
+
         for worker in myWorkers: 
             if worker.carrying:
                 distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
@@ -210,17 +213,17 @@ class AIPlayer(Player):
             steps += foodDist * (11 - myInv.foodCount)
 
         #aiming for a win through offense
-        # attackDist = 99999
-        # for drone in myDrones:
-        #     if len(enemyWorkers) == 0:
-        #         attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
-        #         steps += attackDist
-        #     else:
-        #         attackDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
-        #         if attackDist < stepsToReach(myState, drone.coords, enemyQueen.coords):
-        #             steps += attackDist
-        #         else:
-        #             steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
+        attackDist = 99999
+        for drone in myDrones:
+            if len(enemyWorkers) == 0:
+                attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
+                steps += attackDist
+            else:
+                attackDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
+                if attackDist < stepsToReach(myState, drone.coords, enemyQueen.coords):
+                    steps += attackDist
+                else:
+                    steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
 
         # # Target enemy drones with soldiers
         for soldier in mySoldiers:
