@@ -108,6 +108,16 @@ class AIPlayer(Player):
             #create a node object using what we have done so far
             newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
             nodeMoveList.append(newMoveNode)
+        
+        #now iterate through all created nodes in a list and determine which has the lowest cost
+        # or would get you to the best gamestate
+        # lowEval = 9999999
+        # selectedMove = None
+        # for moveNode in moveNodeList:
+        #     if moveNode.evalOfState < lowEval:
+        #         lowEval = moveNode.evalOfState
+        #         selectedMove = moveNode.moveToMake
+        # When uncommented, this determines which move is the best one according to the value it was heuristically given.    
 
 
         selectedMove = moves[random.randint(0,len(moves) - 1)];
