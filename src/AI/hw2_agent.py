@@ -101,7 +101,7 @@ class AIPlayer(Player):
         moveNodeList = []
         for move in moves:
             # generate the next state that would happen based upon a given move
-            nextState = getNextState(currentState, move)
+            nextState = self.getNextState(currentState, move)
             # evaluate that state using our heuristic
             nextStateEval = self.heuristicStepsToGoal(nextState)
             #create a node object using what we have done so far
@@ -110,33 +110,22 @@ class AIPlayer(Player):
         
         #now iterate through all created nodes in a list and determine which has the lowest cost
         # or would get you to the best gamestate
-        
         selectedMove = None
-        nodesWithEqualEvaluations = {}
-        moveKeys = nodesWithEqualEvaluations.keys()
-        for moveNode in moveNodeList:
-            if moveNode.evalOfState not in nodesWithEqualEvaluations:
-                nodesWithEqualEvaluations[moveNode.evalOfState] = [moveNode.moveToMake]
-            else:
-                nodesWithEqualEvaluations[moveNode.evalOfState].append(moveNode.moveToMake)
-            # if moveNode.evalOfState < lowEval:
-            #     lowEval = moveNode.evalOfState
-            #     selectedMove = moveNode.moveToMake
-        lowEval = 9999999999999999999999999999
-        for key in moveKeys:
-            if key < lowEval and (nodesWithEqualEvaluations[key] != None):
-                numAnts = len(currentState.inventories[currentState.whoseTurn].ants)
-                selectedMove = nodesWithEqualEvaluations[key][random.randint(0,len(nodesWithEqualEvaluations[key]) - 1)]
-                while selectedMove.moveType == BUILD and numAnts >= 4:
-                    selectedMove = nodesWithEqualEvaluations[key][random.randint(0,len(nodesWithEqualEvaluations[key]) - 1)]
-        return selectedMove
-        # selectedMove = moves[random.randint(0,len(moves) - 1)];
+        # nodesWithEqualEvaluations = {}
+        # moveKeys = nodesWithEqualEvaluations.keys()
 
-        # #don't do a build move if there are already 3+ ants
-        
-        # while (selectedMove.moveType == BUILD and numAnts >= 3):
-        #     selectedMove = moves[random.randint(0,len(moves) - 1)];
-            
+        # this chunk creates a hashtable with keys = heuristic scores and values = moves to make.
+        # The lowest key in the table is then found and a move from the list corresponding to that key is
+        # randomly selected. 
+
+        selectedMove = (self.bestMove(moveNodeList)).moveToMake
+
+        # for key in moveKeys:
+        #     if key < lowEval and (nodesWithEqualEvaluations[key] != None):
+        #         lowEval = key
+        #         numAnts = len(currentState.inventories[currentState.whoseTurn].ants)
+        #         selectedMove = nodesWithEqualEvaluations[key][random.randint(0,len(nodesWithEqualEvaluations[key]) - 1)]
+        return selectedMove
         
     
     ##
@@ -157,23 +146,23 @@ class AIPlayer(Player):
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        myState = currentState.fastclone()
+        myState = currentState
         steps = 0
 
         #it's me!
         me = myState.whoseTurn
-        enemy = (me+1)%2
+        enemy = 1-me
 
         #fetching constructions
         tunnels = getConstrList(myState, types = (TUNNEL,))
         hills = getConstrList(myState, types = (ANTHILL,))
-        myFoods = getConstrList(myState, me, (FOOD,))
+        allFoods = getConstrList(myState, None, (FOOD,))
 
 
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
-        myAntHill = getConstrList(currentState, me, (ANTHILL,))[0]
-        myFood = myInv.foodCount
+        myFoodCount = myInv.foodCount
+
         myTunnel = myInv.getTunnels()[0]
         myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myWorkers = getAntList(myState, me, (WORKER,))
@@ -181,7 +170,7 @@ class AIPlayer(Player):
         myRSoldiers = getAntList(myState, me, (R_SOLDIER,))
         myDrones = getAntList(myState, me, (DRONE,))
         myQueen = myInv.getQueen()
-
+        myAnts = myInv.ants
 
         enemyInv = getEnemyInv(self, myState)
         enemyTunnel = enemyInv.getTunnels()[0]
@@ -192,39 +181,33 @@ class AIPlayer(Player):
         enemyDrones = getAntList(myState, enemy, (DRONE,))
         enemyQueen = enemyInv.getQueen()
 
-        foodDist = 99999
+        foodDist = 9999999
         foodTurns = 0
         isTunnel = False
 
-        foodDist = 0
-        for worker in myWorkers:
-            #optimise food deposit distance
+        for worker in myWorkers: 
             if worker.carrying:
                 distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
                 distToHill = stepsToReach(myState, worker.coords, myHill.coords)
-                foodDist = min(distToTunnel, distToHill) * 0.9
-            else:#Otherwise, we want to move toward the food
+                foodDist = min(distToTunnel, distToHill) - 0.2
+                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+                    foodDist = 0.2
+            else: # Otherwise, we want to move toward the food
+                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+                    foodDist = 0.2
                 closestFoodDist = 99999
                 bestFood = None
-                for food in myFoods:
-                    print(food.coords)
+                for food in allFoods:
                     distToCurrFood = stepsToReach(myState, worker.coords, food.coords)
-                    if distToCurrFood < closestFoodDist:
+                    if worker.coords == food.coords:
+                        bestFood = food
+                        closestFoodDist = 0.01
+                        break
+                    if distToCurrFood <= closestFoodDist:
                         closestFoodDist = distToCurrFood
                         bestFood = food
                 foodDist = closestFoodDist
-
-                # distToFood = []
-                # for food in myFoods:
-                #     distToFood.append(stepsToReach(myState, worker.coords, food.coords))
-                #     closestFoodDist = 99999
-                #     optFood = 99999
-                #     for i in range(len(distToFood)):
-                #         if distToFood[i] < closestFoodDist:
-                #             closestFoodDist = distToFood[i]
-                #             optFood = i
-                # foodDist = stepsToReach(myState, worker.coords, myFoods[optFood].coords)
-            steps += foodDist * (11-myInv.foodCount)
+            steps += foodDist * (11 - myInv.foodCount)
 
         #aiming for a win through offense
         # attackDist = 99999
@@ -242,35 +225,28 @@ class AIPlayer(Player):
         # # Target enemy drones with soldiers
         for soldier in mySoldiers:
             for worker in enemyWorkers:
-                stepsToWorker = stepsToReach(myState, soldier.coords, worker.coords)
-                stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords)
+                stepsToWorker = stepsToReach(myState, soldier.coords, worker.coords) + 1
+                stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
                 if stepsToWorker <= stepsToHill:
                     steps += stepsToWorker
                 else: steps += stepsToHill
         
         # this is intended to keep an ant on the enemy hill if it happens to make its way there
-        myAnts = myInv.ants
         for ant in myAnts:
             if ant.coords == enemyHill.coords:
                 steps = steps * 0.025
         return steps
 
 
-    ##
-    #TODO: Complete this function.
-    #
-    ##
+
     def bestMove(self, nodeList):
-        lowestEvalValue = 9999999
+        lowestEvalValue = 99999999
         bestNode = None
         for node in nodeList:
-            if node.evalOfState < lowestEvalValue:
+            if node.evalOfState <= lowestEvalValue:
                 lowestEvalValue = node.evalOfState
                 bestNode = node
-        return node
-
-        
-
+        return bestNode
 
     ##
     #registerWin
@@ -282,6 +258,91 @@ class AIPlayer(Player):
         pass
 
 
+
+
+
+    # This is a redefinition of the getNextState from AIPlayerUtils
+    # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
+    # This was a common bug most groups experienced when working on their agents.
+
+
+    def getNextState(self,currentState, move):
+        # variables I will need
+        myGameState = currentState.fastclone()
+        myInv = getCurrPlayerInventory(myGameState)
+        me = myGameState.whoseTurn
+        myAnts = myInv.ants
+        myTunnels = myInv.getTunnels()
+        myAntHill = myInv.getAnthill()
+
+        # If enemy ant is on my anthill or tunnel update capture health
+        ant = getAntAt(myGameState, myAntHill.coords)
+        if ant is not None:
+            if ant.player != me:
+                myAntHill.captureHealth -= 1
+
+        # If an ant is built update list of ants
+        antTypes = [WORKER, DRONE, SOLDIER, R_SOLDIER]
+        if move.moveType == BUILD:
+            if move.buildType in antTypes:
+                ant = Ant(myInv.getAnthill().coords, move.buildType, me)
+                myInv.ants.append(ant)
+                # Update food count depending on ant built
+                myInv.foodCount -= UNIT_STATS[move.buildType][COST]
+            # ants are no longer allowed to build tunnels, so this is an error
+            elif move.buildType == TUNNEL:
+                print("Attempted tunnel build in getNextState()")
+                return currentState
+
+        # If an ant is moved update their coordinates and has moved
+        elif move.moveType == MOVE_ANT:
+            newCoord = move.coordList[-1]
+            startingCoord = move.coordList[0]
+            for ant in myAnts:
+                if ant.coords == startingCoord:
+                    ant.coords = newCoord
+                    # TODO: should this be set true? Design decision
+                    ant.hasMoved = False
+                    # If an ant is carrying food and ends on the anthill or tunnel drop the food
+                    if ant.carrying and ant.coords == myInv.getAnthill().coords:
+                        myInv.foodCount += 1
+                        # ant.carrying = False
+                    for tunnels in myTunnels:
+                        if ant.carrying and (ant.coords == tunnels.coords):
+                            myInv.foodCount += 1
+                            # ant.carrying = False
+                    # If an ant doesn't have food and ends on the food grab food
+                    if not ant.carrying and ant.type == WORKER:
+                        foods = getConstrList(myGameState, 2, [FOOD])
+                        for food in foods:
+                            if food.coords == ant.coords:
+                                # ant.carrying = True
+                                pass
+                    # If my ant is close to an enemy ant attack it
+                    attackable = listAttackable(ant.coords, UNIT_STATS[ant.type][RANGE])
+                    for coord in attackable:
+                        foundAnt = getAntAt(myGameState, coord)
+                        if foundAnt is not None:  # If ant is adjacent my ant
+                            if foundAnt.player != me:  # if the ant is not me
+                                foundAnt.health = foundAnt.health - UNIT_STATS[ant.type][ATTACK]  # attack
+                                # If an enemy is attacked and looses all its health remove it from the other players
+                                # inventory
+                                if foundAnt.health <= 0:
+                                    myGameState.inventories[1 - me].ants.remove(foundAnt)
+                                # If attacked an ant already don't attack any more
+                                break
+        return myGameState
+
+
+
+# node object containing relevant data for a potential move. 
+# Parent and depth are not relevant for part A, so we left them as None and 0
+#input: currState - state object depicting current state
+#       moveToMake - move object, potential move to be considered
+#       nextState - state object, resultant state that would be produced as a result of aforementioned move
+#       depth - int, how deep the node is in our search
+#       parent - node object, reference to the parent node
+#       evalOfState - float/int/some number resulting from heuristic examination of the nextState 
 class MoveNode():
     def __init__(self, currState, moveToMake, nextState, depth, parent, evalOfState):
         self.moveToMake = moveToMake
