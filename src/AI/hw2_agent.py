@@ -380,3 +380,79 @@ class MoveNode():
         self.parent = None
         self.evalOfState = evalOfState
 
+# testing!!
+
+# get a game state with some food and a worker on the tunnel (thanks Joanna!)
+def getGameState():
+    state = GameState.getBasicState()
+    #my setup
+    playerInventory = state.inventories[state.whoseTurn]
+    playerInventory.constrs.append(Construction((1, 1), FOOD))
+    playerTunnel = playerInventory.getTunnels()[0].coords
+    playerInventory.ants.append(Ant(playerTunnel, WORKER, state.whoseTurn))
+
+    #enemy setup
+    enemyInventory = state.inventories[1 - state.whoseTurn]
+    enemyInventory.constrs.append(Construction((2, 2), FOOD))
+    enemyInventory.constrs.append(Construction((8, 8), FOOD))
+    enemyInventory.constrs.append(Construction((6, 6), FOOD))
+    enemyTunnel = enemyInventory.getTunnels()[0].coords
+    enemyInventory.ants.append(Ant(enemyTunnel, WORKER, 1 - state.whoseTurn))
+
+    #inv setup
+    state.inventories[2].constrs = playerInventory.constrs + enemyInventory.constrs
+    state.inventories[2].ants = playerInventory.ants + enemyInventory.ants
+
+    return state
+
+
+# make a simple game state to test scores
+def heuristicStepsToGoalTest():
+    # get game state
+    state = getGameState()
+    myAnt = Ant((0, 6), WORKER, 0)
+    enemyAnt = Ant((0, 3), WORKER, 1)
+    state.inventories[state.whoseTurn].ants.append(myAnt)
+    state.inventories[1 - state.whoseTurn].ants.append(enemyAnt)
+    #making sure our heuristic score is a reasonable number
+    score = 100
+    testScore = heuristicStepsToGoal(state)
+    if (score > testScore):
+        print("Heuristic is too high")
+    if (testScore == 0):
+        print("Where's my score?")
+
+# make a move to test getMove()
+def getMoveTest():
+    state = getGameState()
+    player = AIPlayer(0)
+    playerMove = player.getMove(state)
+    move = Move(MOVE_ANT, [(8, 0), (7, 0), (7, 1)], None)
+    if move.coordList != playerMove.coordList:
+        print("Coordinates not the same")
+    if move.moveType != playerMove.moveType:
+        print("Move type not the same")
+
+# make nodes and moves to test bestmove()
+def bestMoveTest():
+    #first move (high cost)
+    state = getGameState()
+    move1 = Move(None, None, None)
+    node1 = SearchNode(move1, state, None)
+    node1.evaluation = 99999
+
+    #second move (low cost)
+    move2 = Move(None, None, None)
+    node2 = SearchNode(move2, state, None)
+    node2.evaluation = 1
+    myMove = bestMove([node1, node2])
+
+    if myMove is not move2:
+        print("Best Move is not the best move")
+
+if __name__ == "__main__":
+    getMoveTest()
+    bestMoveTest()
+    heuristicStepsToGoalTest()
+
+
