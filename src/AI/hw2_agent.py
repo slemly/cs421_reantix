@@ -104,10 +104,10 @@ class AIPlayer(Player):
             # generate the next state that would happen based upon a given move
             nextState = getNextState(currentState, move)
             # evaluate that state using our heuristic
-            nextStateEval = self.heursticStepsToGoal(nextState)
+            nextStateEval = self.heuristicStepsToGoal(nextState)
             #create a node object using what we have done so far
             newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
-            nodeMoveList.append(newMoveNode)
+            moveNodeList.append(newMoveNode)
         
         #now iterate through all created nodes in a list and determine which has the lowest cost
         # or would get you to the best gamestate
@@ -152,6 +152,7 @@ class AIPlayer(Player):
 
         #it's me!
         me = myState.whoseTurn
+        enemy = (me+1)%2
 
         #fetching constructions
         tunnels = getConstrList(myState, types = (TUNNEL,))
@@ -162,21 +163,22 @@ class AIPlayer(Player):
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
         myFood = myInv.foodCount
-        myTunnel = tunnels[1] if (tunnels[0].coords[1] > 5) else tunnels[0]
-        myHill = hills[1] if (hills[0].coords[1] > 5) else hills[0]
+        myTunnel = myInv.getTunnels()[0]
+        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myWorkers = getAntList(myState, me, (WORKER,))
         mySoldiers = getAntList(myState, me, (SOLDIER,))
         myRSoldiers = getAntList(myState, me, (R_SOLDIER,))
         myDrones = getAntList(myState, me, (DRONE,))
+        myQueen = myInv.getQueen()
 
 
         enemyInv = getEnemyInv(self, myState)
-        enemyTunnel = tunnels[0] if (myTunnel is tunnels[1]) else tunnels[1]
-        enemyHill = hills[1] if (myHill is hills[0]) else hills[0]
-        enemyWorkers = getAntList(myState, abs(me - 1), (WORKER,))
-        ememySoldiers = getAntList(myState, abs(me - 1), (SOLDIER,))
-        enemyRSoldiers = getAntList(myState, abs(me - 1), (R_SOLDIER,))
-        enemyDrones = getAntList(myState, abs(me - 1), (DRONE,))
+        enemyTunnel = enemyInv.getTunnels()[0]
+        enemyHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        enemyWorkers = getAntList(myState, enemy, (WORKER,))
+        ememySoldiers = getAntList(myState, enemy, (SOLDIER,))
+        enemyRSoldiers = getAntList(myState, enemy, (R_SOLDIER,))
+        enemyDrones = getAntList(myState, enemy, (DRONE,))
         enemyQueen = enemyInv.getQueen()
 
         foodDist = 99999
@@ -188,7 +190,6 @@ class AIPlayer(Player):
                 #optimise food deposit distance
                 distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
                 distToHill = stepsToReach(myState, worker.coords, myHill.coords)
-                goToTunnel = True if distToTunnel < distToHill else False
                 foodDist = min(distToTunnel, distToHill)
             #Otherwise, we want to move toward the food
             else:
@@ -201,29 +202,29 @@ class AIPlayer(Player):
                         if distToFood[i] < closestFoodDist:
                             closestFoodDist = distToFood[i]
                             optFood = i
-                foodDist = stepsToReach(myState, worker.coords, i.coords)
-        steps += foodDist * (11 - myInv.foodCount)
+                foodDist = stepsToReach(myState, worker.coords, foods[optFood].coords)
+            steps += foodDist*(11-myInv.foodCount)
 
         #aiming for a win through offense
-        attackDist = 99999
-        for drone in myDrones:
-            if len(enemyWorkers) == 0:
-                attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
-                steps += attackDist
-            else:
-                attackDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
-                if attackDist < stepsToReach(myState, drone.coords, enemyQueen.coords):
-                    steps += attackDist
-                else:
-                    steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
+        # attackDist = 99999
+        # for drone in myDrones:
+        #     if len(enemyWorkers) == 0:
+        #         attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
+        #         steps += attackDist
+        #     else:
+        #         attackDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords) + 10
+        #         if attackDist < stepsToReach(myState, drone.coords, enemyQueen.coords):
+        #             steps += attackDist
+        #         else:
+        #             steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
 
-        # Target enemy drones with soldiers
-        for soldier in mySoldiers:
-            for enemyDrone in enemyDrones:
-                if len(enemyDrones) == 0:
-                    soldierDist = stepsToReach(myState, soldier.coords, enemyHill.coords)
-                else:
-                    soldierDist = stepsToReach(myState, soldier.coords, .coords)
+        # # Target enemy drones with soldiers
+        # for soldier in mySoldiers:
+        #     for enemyDrone in enemyDrones:
+        #         if len(enemyDrones) == 0:
+        #             soldierDist = stepsToReach(myState, soldier.coords, enemyHill.coords)
+        #         else:
+        #             soldierDist = stepsToReach(myState, soldier.coords, .coords)
         # for worker in enemyWorkers:
         #     howManySteps = stepsToReach(myState, ant.coords, worker.coords)
         #     steps += howManySteps
