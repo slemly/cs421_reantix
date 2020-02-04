@@ -46,7 +46,6 @@ class AIPlayer(Player):
     #Return: The coordinates of where the construction is to be placed
     ##
     def getPlacement(self, currentState):
-        print("ALJFHKSAJGFKSNOIUABOUFB")
         numToPlace = 0
         #implemented by students to return their next move
         if currentState.phase == SETUP_PHASE_1:    #stuff on my side
@@ -111,23 +110,34 @@ class AIPlayer(Player):
         
         #now iterate through all created nodes in a list and determine which has the lowest cost
         # or would get you to the best gamestate
-        lowEval = 9999999
+        
         selectedMove = None
+        nodesWithEqualEvaluations = {}
+        moveKeys = nodesWithEqualEvaluations.keys()
         for moveNode in moveNodeList:
-            if moveNode.evalOfState < lowEval:
-                lowEval = moveNode.evalOfState
-                selectedMove = moveNode.moveToMake
-        # When uncommented, this determines which move is the best one according to the value it was heuristically given.    
-
-
-        selectedMove = moves[random.randint(0,len(moves) - 1)];
-
-        #don't do a build move if there are already 3+ ants
-        numAnts = len(currentState.inventories[currentState.whoseTurn].ants)
-        while (selectedMove.moveType == BUILD and numAnts >= 3):
-            selectedMove = moves[random.randint(0,len(moves) - 1)];
-            
+            if moveNode.evalOfState not in nodesWithEqualEvaluations:
+                nodesWithEqualEvaluations[moveNode.evalOfState] = [moveNode.moveToMake]
+            else:
+                nodesWithEqualEvaluations[moveNode.evalOfState].append(moveNode.moveToMake)
+            # if moveNode.evalOfState < lowEval:
+            #     lowEval = moveNode.evalOfState
+            #     selectedMove = moveNode.moveToMake
+        lowEval = 9999999999999999999999999999
+        for key in moveKeys:
+            if key < lowEval and (nodesWithEqualEvaluations[key] != None):
+                numAnts = len(currentState.inventories[currentState.whoseTurn].ants)
+                selectedMove = nodesWithEqualEvaluations[key][random.randint(0,len(nodesWithEqualEvaluations[key]) - 1)]
+                while selectedMove.moveType == BUILD and numAnts >= 4:
+                    selectedMove = nodesWithEqualEvaluations[key][random.randint(0,len(nodesWithEqualEvaluations[key]) - 1)]
         return selectedMove
+        # selectedMove = moves[random.randint(0,len(moves) - 1)];
+
+        # #don't do a build move if there are already 3+ ants
+        
+        # while (selectedMove.moveType == BUILD and numAnts >= 3):
+        #     selectedMove = moves[random.randint(0,len(moves) - 1)];
+            
+        
     
     ##
     #getAttack
@@ -157,11 +167,12 @@ class AIPlayer(Player):
         #fetching constructions
         tunnels = getConstrList(myState, types = (TUNNEL,))
         hills = getConstrList(myState, types = (ANTHILL,))
-        foods = getConstrList(myState, None, (FOOD,))
+        myFoods = getConstrList(myState, me, (FOOD,))
 
 
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
+        myAntHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myFood = myInv.foodCount
         myTunnel = myInv.getTunnels()[0]
         myHill = getConstrList(currentState, me, (ANTHILL,))[0]
@@ -174,7 +185,7 @@ class AIPlayer(Player):
 
         enemyInv = getEnemyInv(self, myState)
         enemyTunnel = enemyInv.getTunnels()[0]
-        enemyHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
         enemyWorkers = getAntList(myState, enemy, (WORKER,))
         ememySoldiers = getAntList(myState, enemy, (SOLDIER,))
         enemyRSoldiers = getAntList(myState, enemy, (R_SOLDIER,))
@@ -185,25 +196,35 @@ class AIPlayer(Player):
         foodTurns = 0
         isTunnel = False
 
+        foodDist = 0
         for worker in myWorkers:
+            #optimise food deposit distance
             if worker.carrying:
-                #optimise food deposit distance
                 distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
                 distToHill = stepsToReach(myState, worker.coords, myHill.coords)
-                foodDist = min(distToTunnel, distToHill)
-            #Otherwise, we want to move toward the food
-            else:
-                distToFood = []
-                for food in foods:
-                    distToFood.append(stepsToReach(myState, worker.coords, food.coords))
-                    closestFoodDist = 99999
-                    optFood = 99999
-                    for i in range(len(distToFood)):
-                        if distToFood[i] < closestFoodDist:
-                            closestFoodDist = distToFood[i]
-                            optFood = i
-                foodDist = stepsToReach(myState, worker.coords, foods[optFood].coords)
-            steps += foodDist*(11-myInv.foodCount)
+                foodDist = min(distToTunnel, distToHill) * 0.9
+            else:#Otherwise, we want to move toward the food
+                closestFoodDist = 99999
+                bestFood = None
+                for food in myFoods:
+                    print(food.coords)
+                    distToCurrFood = stepsToReach(myState, worker.coords, food.coords)
+                    if distToCurrFood < closestFoodDist:
+                        closestFoodDist = distToCurrFood
+                        bestFood = food
+                foodDist = closestFoodDist
+
+                # distToFood = []
+                # for food in myFoods:
+                #     distToFood.append(stepsToReach(myState, worker.coords, food.coords))
+                #     closestFoodDist = 99999
+                #     optFood = 99999
+                #     for i in range(len(distToFood)):
+                #         if distToFood[i] < closestFoodDist:
+                #             closestFoodDist = distToFood[i]
+                #             optFood = i
+                # foodDist = stepsToReach(myState, worker.coords, myFoods[optFood].coords)
+            steps += foodDist * (11-myInv.foodCount)
 
         #aiming for a win through offense
         # attackDist = 99999
@@ -219,15 +240,19 @@ class AIPlayer(Player):
         #             steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
 
         # # Target enemy drones with soldiers
-        # for soldier in mySoldiers:
-        #     for enemyDrone in enemyDrones:
-        #         if len(enemyDrones) == 0:
-        #             soldierDist = stepsToReach(myState, soldier.coords, enemyHill.coords)
-        #         else:
-        #             soldierDist = stepsToReach(myState, soldier.coords, .coords)
-        # for worker in enemyWorkers:
-        #     howManySteps = stepsToReach(myState, ant.coords, worker.coords)
-        #     steps += howManySteps
+        for soldier in mySoldiers:
+            for worker in enemyWorkers:
+                stepsToWorker = stepsToReach(myState, soldier.coords, worker.coords)
+                stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords)
+                if stepsToWorker <= stepsToHill:
+                    steps += stepsToWorker
+                else: steps += stepsToHill
+        
+        # this is intended to keep an ant on the enemy hill if it happens to make its way there
+        myAnts = myInv.ants
+        for ant in myAnts:
+            if ant.coords == enemyHill.coords:
+                steps = steps * 0.025
         return steps
 
 
