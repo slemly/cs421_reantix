@@ -9,6 +9,8 @@ from Move import Move
 from GameState import *
 from AIPlayerUtils import *
 
+## @Author Samuel Lemly
+## @Author Hera Malik
 
 ##
 #AIPlayer
@@ -124,15 +126,7 @@ class AIPlayer(Player):
     #   enemyLocation - The Locations of the Enemies that can be attacked (Location[])
     ##
     def getAttack(self, currentState, attackingAnt, enemyLocations):
-        # me = currentState.whoseTurn()
-        # enemy = me + 1 % 2
-        # enemyWorkers = getAntList(currentState, enemy, (WORKER,))
-        # if len(enemyWorkers) != 0:
-        #     enemyWorkerLoc = enemyWorkers[0]
-        # for loc in enemyLocations:
-        #     if loc == enemyWorkerLoc:
-        #         return loc
-        #Attack a random enemy.
+        #don't care, attack any enemy
         return enemyLocations[0]
 
     ##
@@ -156,7 +150,7 @@ class AIPlayer(Player):
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
         myFoodCount = myInv.foodCount
-
+        # my items/constructs/ants
         myTunnel = myInv.getTunnels()[0]
         myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myWorkers = getAntList(myState, me, (WORKER,))
@@ -165,7 +159,7 @@ class AIPlayer(Player):
         myDrones = getAntList(myState, me, (DRONE,))
         myQueen = myInv.getQueen()
         myAnts = myInv.ants
-
+        # enemy items/constructs/ants
         enemyInv = getEnemyInv(self, myState)
         enemyTunnel = enemyInv.getTunnels()[0]
         enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
@@ -174,11 +168,12 @@ class AIPlayer(Player):
         enemyRSoldiers = getAntList(myState, enemy, (R_SOLDIER,))
         enemyDrones = getAntList(myState, enemy, (DRONE,))
         enemyQueen = enemyInv.getQueen()
-
+        #arbitrary food distance value for workers to work around
         foodDist = 9999999
         foodTurns = 0
         isTunnel = False
 
+        # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             steps -=1000
         if len(enemyWorkers) > 0:
@@ -203,24 +198,24 @@ class AIPlayer(Player):
         if len(mySoldiers) < 1:
             steps += 25
         
-        
+        # iteration through worker array to 
         for worker in myWorkers: 
-            if worker.carrying:
+            if worker.carrying: #worker has food; go to the hill
                 distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
                 distToHill = stepsToReach(myState, worker.coords, myHill.coords)
                 foodDist = min(distToTunnel, distToHill) - 0.2
                 if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
-                    foodDist = 0.2
+                    foodDist = 0.2 #scalar for good food retrieval
             else: # Otherwise, we want to move toward the food
                 if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
-                    foodDist = 0.2
+                    foodDist = 0.2 #scalar for good food retrieval
                 closestFoodDist = 99999
                 bestFood = None
                 for food in allFoods:
                     distToCurrFood = stepsToReach(myState, worker.coords, food.coords)
                     if worker.coords == food.coords:
                         bestFood = food
-                        closestFoodDist = 0.01
+                        closestFoodDist = 0.01 #scalar for good food retrieval
                         break
                     if distToCurrFood <= closestFoodDist:
                         closestFoodDist = distToCurrFood
@@ -233,20 +228,15 @@ class AIPlayer(Player):
         #aiming for a win through offense
         attackDist = 999999
         for drone in myDrones:
-            # if len(enemyWorkers) == 0:
-            if enemyQueen != None:
-                if attackDist < stepsToReach(myState, drone.coords, enemyQueen.coords):
-                    steps += attackDist
-                else:
-                    steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
+            # primary target for drones is enemy queen
+            if enemyQueen != None:            
+                steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
             else:
                 attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
-            # else:
-                # attackDist = stepsToReach(myState, drone.coords, enemyWorkers[0].coords)
             steps += attackDist
                 
 
-        # # Target enemy drones with soldiers
+        # # Target enemy workers with soldiers, then move to the anthill
         for soldier in mySoldiers:
             if len(enemyWorkers) > 0:
                 for worker in enemyWorkers:
@@ -265,10 +255,11 @@ class AIPlayer(Player):
                 steps = steps * 0.025
         if len(myWorkers) >= 2:
             steps *= 0.85
-        return steps
+        return steps 
 
 
-
+    # bestMove - iterates through a nodeList and determines what the best move is,
+    # according to our heuristic.
     def bestMove(self, nodeList):
         lowestEvalValue = 99999999
         bestNode = None
@@ -290,8 +281,7 @@ class AIPlayer(Player):
 
     # This is a redefinition of the getNextState from AIPlayerUtils
     # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
-    # This was a common bug most groups experienced when working on their agents.
-
+    # This was a common bug many groups experienced when working on their agents.
 
     def getNextState(self,currentState, move):
         # variables I will need
@@ -379,8 +369,13 @@ class MoveNode():
         self.depth = depth
         self.parent = None
         self.evalOfState = evalOfState
+    
+    # def expandNode(self):
+    #     nodesToReturn = []
 
-# testing!!
+
+
+# TESTING DONE BELOW THIS POINT
 
 # get a game state with some food and a worker on the tunnel (thanks Joanna!)
 def getGameState():

@@ -93,10 +93,10 @@ class AIPlayer(Player):
             (0,3), (5,3), (9,0),\
             (8,3), (9,3), (9,2)]
         elif layout == 6:
-                 return[(7,1), (2,1),\
-                (9,0), (0,3), (1,3),\
-                (3,3), (4,3), (5,3),\
-                (6,3), (8,3), (9,3),]
+            return[(7,1), (2,1),\
+            (9,0), (0,3), (1,3),\
+            (3,3), (4,3), (5,3),\
+            (6,3), (8,3), (9,3),]
 
     # dictates movement logic for agent. 
     # Various movements are determined by sensor cases in this function
@@ -193,7 +193,6 @@ class AIPlayer(Player):
                     path = createPathToward(currentState, drone.coords, enemyHill.coords,
                     UNIT_STATS[DRONE][MOVEMENT])
                     return Move(MOVE_ANT, path, None)
-
         
         # move worker towards the tunnel if worker has food
         # DO NOT TOUCH THESE, THEY WORK RIGHT NOW! - SL
