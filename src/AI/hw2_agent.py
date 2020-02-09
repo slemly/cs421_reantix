@@ -96,26 +96,86 @@ class AIPlayer(Player):
     #
     #Return: The Move to be made
     ##
+    ##
+    # TODO: optimize and/or fix as required
+    ##
     def getMove(self, currentState):
         moves = listAllLegalMoves(currentState)
+        # Your getMove method should work as follows:
+        # a.Create two empty lists:
+        # frontierNodes – a list of nodes that have not yet been expanded
+        frontierNodes = []
+        # expandedNodes – a list of nodes that have been expanded
+        expandedNodes = []
+
+        # b.Create a root node from the current state. Be careful to initialize this correctly.
         # create a node for every move
-        depth = 0
-        moveNodeList = []
+        depth = 1
         for move in moves:
             # generate the next state that would happen based upon a given move
             nextState = self.getNextState(currentState, move)
+            # evaluate our state using our heuristic
+            stateEval = self.heuristicStepsToGoal(currentState)
+            # create a node object using what we have done so far
+            rootNode = MoveNode(currentState, move, nextState, depth, None, stateEval)
+            # Add this root node to the frontierNodes list.
+            frontierNodes.append(rootNode)
+
+        # c.Perform the following tasks in a loop *:
+        while frontierNodes[0] is not None:
+            bestScore = 99999999
+            bestMove = None
+            for move in frontierNodes:
+                # Remove the node with the best score from the frontierNodes list and put it in the expandedNodes list.
+                if move.evalOfState < bestScore:
+                    bestScore = move.evalOfState
+                    bestMove = move
+            frontierNodes.remove(bestMove)
+            expandedNodes.append(bestMove)
+        # Call expandNode on the node you just selected
+        # Add all the new nodes created by expandNode to your frontierNodes list
+        frontierNodes.append(self.expandNode(bestMove))
+        # d.When the loop is complete, find the node with the best score in the frontierNodes list.
+        # Using the parent node references, trace back to the initial move that led to this best node.
+        # (If you did your work properly, this will be at depth 1.)
+        parentNode = None
+        for node in frontierNodes:
+            if move.evalOfState < bestScore:
+                bestScore = node.evalOfState
+                parentNode = node.getParent()
+        # Return this move.
+        return parentNode.getMove()
+
+    ##
+    # TODO: optimize and/or fix as required
+    ##
+    # Create an expandNode() method that takes an existing node as a parameter.The method will:
+    def expandNode(self, moveNode):
+        # a. generate a list of all valid moves from the GameState in the given node
+        state = moveNode.getGameState()
+        moves = listAllLegalMoves(state)
+        parentNode = moveNode.getParent()
+        depth = 0
+        # b. create a properly initialized node for each valid move. What should the depth of each of these nodes be?
+        if parentNode == None:
+            depth = 1
+        else:
+            while parentNode != None:
+                depth += 1
+                currentNode = parentNode
+                currentNode.getParent()
+        children = []
+        for move in moves:
+            # generate the next state that would happen based upon a given move
+            nextState = self.getNextState(state, move)
             # evaluate that state using our heuristic
             nextStateEval = self.heuristicStepsToGoal(nextState)
-            #create a node object using what we have done so far
-            newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
-            moveNodeList.append(newMoveNode)
-        
-        #now iterate through all created nodes in a list and determine which has the lowest cost
-        # or would get you to the best gamestate
-        selectedMove = (self.bestMove(moveNodeList)).moveToMake
-        return selectedMove
-        
-    
+            # create a node object using what we have done so far
+            newMoveNode = MoveNode(state, move, nextState, depth, None, nextStateEval)
+            children.append(newMoveNode)
+        # c. return a list of all the new nodes that were created.
+        return children
+
     ##
     #getAttack
     #Description: Gets the attack to be made from the Player
