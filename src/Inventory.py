@@ -60,7 +60,6 @@ class Inventory(object):
         for checkConstruction in self.constrs:
             if checkConstruction.type == TUNNEL:
                 result.append(checkConstruction)
-        
         return result
         
 
