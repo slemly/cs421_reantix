@@ -154,12 +154,12 @@ class AIPlayer(Player):
                 lowestFrontierNode = node
                 lowestFrontierCost = node.evalOfState
         currNode=lowestFrontierNode
-        
-
         # node_retrace = time.time()
-        while(currNode.depth > 1):
+        examinedNodeDepth = currNode.depth
+        while(examinedNodeDepth > 1):
             currNode = lowestFrontierNode.parent
-            print(currNode.depth, "= Depth of current examined node, ", currNode.evalOfState, "= Evaluation of state" )
+            examinedNodeDepth = currNode.depth
+            print(examinedNodeDepth, "= Depth of current examined node, ", currNode.evalOfState, "= Evaluation of state" )
             
 
 
