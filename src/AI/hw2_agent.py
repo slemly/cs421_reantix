@@ -8,6 +8,9 @@ from Ant import UNIT_STATS
 from Move import Move
 from GameState import *
 from AIPlayerUtils import *
+import time
+
+HIGHCOST = 999999999999999
 
 ## @Author Samuel Lemly
 ## @Author Hera Malik
@@ -31,7 +34,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "Neo")
+        super(AIPlayer,self).__init__(inputPlayerId, "Squibbly")
     
     ##
     #getPlacement
@@ -123,8 +126,48 @@ class AIPlayer(Player):
         currentStateEval = self.heuristicStepsToGoal(currentState)
         currentStateRootNode = MoveNode(currentState,None,None,0,None,currentStateEval)
         frontierNodes.append(currentStateRootNode)
+
+        deepestNode = 0 # depth of deepest node for flow control purposes
+        # ext_loop_start = time.time()
+        while(deepestNode<3):
+            print(deepestNode, " = Deepest node depth")
+            nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
+            nodeBest = None
+            # firstForLoopStart = time.time()
+            for node in frontierNodes:
+                if node.evalOfState < nodeBestScore:
+                    nodeBestScore = node.evalOfState
+                    nodeBest = node
+            frontierNodes.remove(nodeBest)
+            expandedNodes.append(nodeBest)
+            expNodesFromBest = self.expandNode(nodeBest)
+            for expNode in expNodesFromBest:
+                frontierNodes.append(expNode)
+            deepestNode = nodeBest.depth + 1
+            
+
+        lowestFrontierCost = HIGHCOST
+        lowestFrontierNode = None
+
         for node in frontierNodes:
-            topScoringNode
+            if node.evalOfState < HIGHCOST:
+                lowestFrontierNode = node
+                lowestFrontierCost = node.evalOfState
+        currNode=lowestFrontierNode
+        
+
+        # node_retrace = time.time()
+        while(currNode.depth > 1):
+            currNode = lowestFrontierNode.parent
+            print(currNode.depth, "= Depth of current examined node, ", currNode.evalOfState, "= Evaluation of state" )
+            
+
+
+        assert (currNode.depth == 1), "Not at proper depth!"
+
+        return currNode.moveToMake
+
+
 
         
     
@@ -370,7 +413,7 @@ class AIPlayer(Player):
                         if foundAnt is not None:  # If ant is adjacent my ant
                             if foundAnt.player != me:  # if the ant is not me
                                 foundAnt.health = foundAnt.health - UNIT_STATS[ant.type][ATTACK]  # attack
-                                # If an enemy is attacked and looses all its health remove it from the other players
+                                # If an enemy is attacked and loses all its health remove it from the other players
                                 # inventory
                                 if foundAnt.health <= 0:
                                     pass
@@ -378,8 +421,6 @@ class AIPlayer(Player):
                                 # If attacked an ant already don't attack any more
                                 break
         return myGameState
-
-
 
 # node object containing relevant data for a potential move. 
 # Parent and depth are not relevant for part A, so we left them as None and 0
@@ -395,7 +436,7 @@ class MoveNode():
         self.currState = currState
         self.nextState = nextState
         self.depth = depth
-        self.parent = None
+        self.parent = parent
         self.evalOfState = evalOfState
     
     
