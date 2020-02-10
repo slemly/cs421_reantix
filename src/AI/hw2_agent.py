@@ -96,24 +96,36 @@ class AIPlayer(Player):
     #
     #Return: The Move to be made
     ##
-    def getMove(self, currentState):
-        moves = listAllLegalMoves(currentState)
-        # create a node for every move
-        depth = 0
-        moveNodeList = []
-        for move in moves:
-            # generate the next state that would happen based upon a given move
-            nextState = self.getNextState(currentState, move)
-            # evaluate that state using our heuristic
-            nextStateEval = self.heuristicStepsToGoal(nextState)
-            #create a node object using what we have done so far
-            newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
-            moveNodeList.append(newMoveNode)
+    # def getMove(self, currentState):
+    #     moves = listAllLegalMoves(currentState)
+    #     # create a node for every move
+    #     depth = 0
+    #     moveNodeList = []
+    #     for move in moves:
+    #         # generate the next state that would happen based upon a given move
+    #         nextState = self.getNextState(currentState, move)
+    #         # evaluate that state using our heuristic
+    #         nextStateEval = self.heuristicStepsToGoal(nextState)
+    #         #create a node object using what we have done so far
+    #         newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
+    #         moveNodeList.append(newMoveNode)
         
-        #now iterate through all created nodes in a list and determine which has the lowest cost
-        # or would get you to the best gamestate
-        selectedMove = (self.bestMove(moveNodeList)).moveToMake
-        return selectedMove
+    #     #now iterate through all created nodes in a list and determine which has the lowest cost
+    #     # or would get you to the best gamestate
+    #     selectedMove = (self.bestMove(moveNodeList)).moveToMake
+    #     return selectedMove
+
+    
+    #Redefined getMove() for HW2B
+    def getMove(self, currentState):
+        frontierNodes=[]
+        expandedNodes=[]
+        currentStateEval = self.heuristicStepsToGoal(currentState)
+        currentStateRootNode = MoveNode(currentState,None,None,0,None,currentStateEval)
+        frontierNodes.append(currentStateRootNode)
+        for node in frontierNodes:
+            topScoringNode
+
         
     
     ##
@@ -279,6 +291,22 @@ class AIPlayer(Player):
         pass
 
 
+
+    # Expands a given node into a list of child nodes for each state.
+    # Assigns an evaluation to each based on heuristic value.  
+    def expandNode(self, moveNode):
+        currentState = moveNode.currState
+        moves = listAllLegalMoves(currentState)
+        nodesToReturn = []
+        for move in moves:
+            nextState = self.getNextState(currentState, move)
+            eval = self.heuristicStepsToGoal(nextState)
+            nodeAppend=MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, eval)
+            nodesToReturn.append(nodeAppend)
+        return nodesToReturn
+
+
+
     # This is a redefinition of the getNextState from AIPlayerUtils
     # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
     # This was a common bug many groups experienced when working on their agents.
@@ -370,9 +398,7 @@ class MoveNode():
         self.parent = None
         self.evalOfState = evalOfState
     
-    # def expandNode(self):
-    #     nodesToReturn = []
-
+    
 
 
 # TESTING DONE BELOW THIS POINT
@@ -399,7 +425,6 @@ def getGameState():
     state.inventories[2].ants = playerInventory.ants + enemyInventory.ants
 
     return state
-
 
 # make a simple game state to test scores
 def heuristicStepsToGoalTest():
