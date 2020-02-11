@@ -307,13 +307,13 @@ class AIPlayer(Player):
                 stepsToHill = approxDist(soldier.coords, enemyHill.coords) + 1
                 steps += stepsToHill
             if soldier.coords == enemyHill.coords:
-                steps -= 20
+                steps -= 200
         # this is intended to keep an ant on the enemy hill if it happens to make its way there
         for ant in myAnts:
             if ant.coords == enemyHill.coords:
-                steps = steps * 0.025
+                steps -= 100000
         if len(myWorkers) >= 2:
-            steps *= 0.85
+            steps -= 1000
         return steps 
 
 
