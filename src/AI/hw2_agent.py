@@ -147,7 +147,6 @@ class AIPlayer(Player):
 
         lowestFrontierCost = HIGHCOST
         lowestFrontierNode = None
-
         for node in frontierNodes:
             if node.evalOfState < lowestFrontierCost:
                 lowestFrontierNode = node
