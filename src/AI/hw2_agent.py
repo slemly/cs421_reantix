@@ -149,7 +149,7 @@ class AIPlayer(Player):
         lowestFrontierNode = None
 
         for node in frontierNodes:
-            if node.evalOfState < HIGHCOST:
+            if node.evalOfState < lowestFrontierCost:
                 lowestFrontierNode = node
                 lowestFrontierCost = node.evalOfState
         currNode=lowestFrontierNode
@@ -158,7 +158,6 @@ class AIPlayer(Player):
         examinedNodeDepth = currNode.depth
         print(lowestFrontierNode.evalOfState, "= Lowest Frontier Node's evaluation of State")
         print(lowestFrontierNode.depth, "= Lowest Frontier Node's depth")
-        currNode = lowestFrontierNode
         while(examinedNodeDepth > 1):
             currNode = currNode.parent
             examinedNodeDepth = currNode.depth
