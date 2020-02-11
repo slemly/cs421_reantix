@@ -129,10 +129,18 @@ class AIPlayer(Player):
 
         deepestNode = 0 # depth of deepest node for flow control purposes
         # ext_loop_start = time.time()
+<<<<<<< HEAD
         while(deepestNode<4):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
             nodeBest = None
     
+=======
+        while(deepestNode<3):
+            print(deepestNode, " = Deepest node depth")
+            nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
+            nodeBest = None
+            # firstForLoopStart = time.time()
+>>>>>>> 9c09c8bf127683b81e4d55a8042ace8be76451a8
             for node in frontierNodes:
                 if node.evalOfState < nodeBestScore:
                     nodeBestScore = node.evalOfState
