@@ -10,7 +10,7 @@ from GameState import *
 from AIPlayerUtils import *
 import time
 
-HIGHCOST = 999999999999999
+HIGHCOST = 999999999999999 # arbitrary constant that will help us later
 
 ## @Author Samuel Lemly
 ## @Author Hera Malik
@@ -99,71 +99,56 @@ class AIPlayer(Player):
     #
     #Return: The Move to be made
     ##
-    # def getMove(self, currentState):
-    #     moves = listAllLegalMoves(currentState)
-    #     # create a node for every move
-    #     depth = 0
-    #     moveNodeList = []
-    #     for move in moves:
-    #         # generate the next state that would happen based upon a given move
-    #         nextState = self.getNextState(currentState, move)
-    #         # evaluate that state using our heuristic
-    #         nextStateEval = self.heuristicStepsToGoal(nextState)
-    #         #create a node object using what we have done so far
-    #         newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
-    #         moveNodeList.append(newMoveNode)
-        
-    #     #now iterate through all created nodes in a list and determine which has the lowest cost
-    #     # or would get you to the best gamestate
-    #     selectedMove = (self.bestMove(moveNodeList)).moveToMake
-    #     return selectedMove
-
     
     #Redefined getMove() for HW2B
     def getMove(self, currentState):
+        #define specified lists
         frontierNodes=[]
         expandedNodes=[]
-        currentStateEval = self.heuristicStepsToGoal(currentState)
-        currentStateRootNode = MoveNode(currentState,None,None,0,None,currentStateEval)
-        frontierNodes.append(currentStateRootNode)
+        currentStateEval = self.heuristicStepsToGoal(currentState) # evaluate current state with heuristic
+        currentStateRootNode = MoveNode(currentState,None,None,0,None,currentStateEval) # create node of current state
+        frontierNodes.append(currentStateRootNode) # append current state node to list
 
         deepestNode = 0 # depth of deepest node for flow control purposes
-        # ext_loop_start = time.time()
+        
+        # setting the number inside the while() conditional ajusts how deep the agent searches
         while(deepestNode<3):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
             nodeBest = None
-    
+            #iterate through noddes in frontiernode list, find one with best score
             for node in frontierNodes:
                 if node.evalOfState < nodeBestScore:
                     nodeBestScore = node.evalOfState
                     nodeBest = node
+            # remove that node from the frontier, add it to the expanded nodes, then expand it
             frontierNodes.remove(nodeBest)
             expandedNodes.append(nodeBest)
             expNodesFromBest = self.expandNode(nodeBest)
+            # add expanded node's children to the frontier
             for expNode in expNodesFromBest:
                 frontierNodes.append(expNode)
             deepestNode = nodeBest.depth + 1
             
-
+        # tools to find lowest-costing node on frontier
         lowestFrontierCost = HIGHCOST
         lowestFrontierNode = None
+
+        # find the lowest-costing node on frontier, then select it
         for node in frontierNodes:
             if node.evalOfState < lowestFrontierCost:
                 lowestFrontierNode = node
                 lowestFrontierCost = node.evalOfState
         currNode=lowestFrontierNode
 
+        # retrace selected node to find the parent node
         examinedNodeDepth = currNode.depth
         while(examinedNodeDepth > 1):
             currNode = currNode.parent
             examinedNodeDepth = currNode.depth
-            # print(examinedNodeDepth, "= Depth of current examined node, ", currNode.evalOfState, "= Evaluation of state" )
             if currNode.depth == 1:
                 break
-            
-        assert (currNode.depth == 1), "Not at proper depth!"
-
-        return currNode.moveToMake
+        assert (currNode.depth == 1), "Not at proper depth!" # sanity check
+        return currNode.moveToMake # return the move of the selected node
 
 
 
