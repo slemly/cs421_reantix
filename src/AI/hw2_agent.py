@@ -129,7 +129,7 @@ class AIPlayer(Player):
 
         deepestNode = 0 # depth of deepest node for flow control purposes
         # ext_loop_start = time.time()
-        while(deepestNode<4):
+        while(deepestNode<3):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
             nodeBest = None
     
@@ -231,7 +231,7 @@ class AIPlayer(Player):
         foodTurns = 0
         isTunnel = False
 
-        # If-statetments intended to punish or reward the agent based upon the status of the environment
+        # If-statements intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             steps -=1000
         if len(enemyWorkers) > 0:
@@ -259,8 +259,8 @@ class AIPlayer(Player):
         # iteration through worker array to 
         for worker in myWorkers: 
             if worker.carrying: #worker has food; go to the hill
-                distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
-                distToHill = stepsToReach(myState, worker.coords, myHill.coords)
+                distToTunnel = approxDist(worker.coords, myTunnel.coords)
+                distToHill = approxDist(worker.coords, myHill.coords)
                 foodDist = min(distToTunnel, distToHill) - 0.2
                 if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
                     foodDist = 0.2 #scalar for good food retrieval
@@ -270,7 +270,7 @@ class AIPlayer(Player):
                 closestFoodDist = 99999
                 bestFood = None
                 for food in allFoods:
-                    distToCurrFood = stepsToReach(myState, worker.coords, food.coords)
+                    distToCurrFood = approxDist(worker.coords, food.coords)
                     if worker.coords == food.coords:
                         bestFood = food
                         closestFoodDist = 0.01 #scalar for good food retrieval
@@ -288,9 +288,9 @@ class AIPlayer(Player):
         for drone in myDrones:
             # primary target for drones is enemy queen
             if enemyQueen != None:            
-                steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
+                steps += approxDist(drone.coords, enemyQueen.coords)
             else:
-                attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
+                attackDist = approxDist(drone.coords, enemyHill.coords)
             steps += attackDist
                 
 
@@ -298,15 +298,16 @@ class AIPlayer(Player):
         for soldier in mySoldiers:
             if len(enemyWorkers) > 0:
                 for worker in enemyWorkers:
-                    stepsToWorker = stepsToReach(myState, soldier.coords, worker.coords) + 1
-                    stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
+                    stepsToWorker = approxDist(soldier.coords, worker.coords) + 1
+                    stepsToHill = approxDist(soldier.coords, enemyHill.coords) + 1
                     if stepsToWorker <= stepsToHill:
                         steps += stepsToWorker
                     else: steps += stepsToHill
             else:
-                stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
+                stepsToHill = approxDist(soldier.coords, enemyHill.coords) + 1
                 steps += stepsToHill
-        
+            if soldier.coords == enemyHill.coords:
+                steps -= 20
         # this is intended to keep an ant on the enemy hill if it happens to make its way there
         for ant in myAnts:
             if ant.coords == enemyHill.coords:
