@@ -129,11 +129,10 @@ class AIPlayer(Player):
 
         deepestNode = 0 # depth of deepest node for flow control purposes
         # ext_loop_start = time.time()
-        while(deepestNode<3):
-            print(deepestNode, " = Deepest node depth")
+        while(deepestNode<4):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
             nodeBest = None
-            # firstForLoopStart = time.time()
+    
             for node in frontierNodes:
                 if node.evalOfState < nodeBestScore:
                     nodeBestScore = node.evalOfState
@@ -154,15 +153,21 @@ class AIPlayer(Player):
                 lowestFrontierNode = node
                 lowestFrontierCost = node.evalOfState
         currNode=lowestFrontierNode
-        # node_retrace = time.time()
+        print("Frontier Node List Length = ", len(frontierNodes))
+        print("Expanded Node List Length = ", len(expandedNodes))
         examinedNodeDepth = currNode.depth
+        print(lowestFrontierNode.evalOfState, "= Lowest Frontier Node's evaluation of State")
+        print(lowestFrontierNode.depth, "= Lowest Frontier Node's depth")
+        currNode = lowestFrontierNode
         while(examinedNodeDepth > 1):
-            currNode = lowestFrontierNode.parent
+            currNode = currNode.parent
             examinedNodeDepth = currNode.depth
-            print(examinedNodeDepth, "= Depth of current examined node, ", currNode.evalOfState, "= Evaluation of state" )
+            # print(examinedNodeDepth, "= Depth of current examined node, ", currNode.evalOfState, "= Evaluation of state" )
+            if currNode.depth == 1:
+                break
             
-
-
+        print(currNode.depth)
+        print(currNode.evalOfState)
         assert (currNode.depth == 1), "Not at proper depth!"
 
         return currNode.moveToMake
