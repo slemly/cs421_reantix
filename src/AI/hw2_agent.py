@@ -152,11 +152,8 @@ class AIPlayer(Player):
                 lowestFrontierNode = node
                 lowestFrontierCost = node.evalOfState
         currNode=lowestFrontierNode
-        print("Frontier Node List Length = ", len(frontierNodes))
-        print("Expanded Node List Length = ", len(expandedNodes))
+
         examinedNodeDepth = currNode.depth
-        print(lowestFrontierNode.evalOfState, "= Lowest Frontier Node's evaluation of State")
-        print(lowestFrontierNode.depth, "= Lowest Frontier Node's depth")
         while(examinedNodeDepth > 1):
             currNode = currNode.parent
             examinedNodeDepth = currNode.depth
@@ -164,8 +161,6 @@ class AIPlayer(Player):
             if currNode.depth == 1:
                 break
             
-        print(currNode.depth)
-        print(currNode.evalOfState)
         assert (currNode.depth == 1), "Not at proper depth!"
 
         return currNode.moveToMake
