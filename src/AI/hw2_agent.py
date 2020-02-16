@@ -236,7 +236,7 @@ class AIPlayer(Player):
         elif len(myDrones) > 4:
             steps += 20
         if len(mySoldiers) < 1:
-            steps += 25
+            steps += 40
         
         # iteration through worker array to 
         # for worker in myWorkers:
@@ -279,20 +279,23 @@ class AIPlayer(Player):
             distToHill = approxDist(worker.coords, myHill.coords)
 
             if worker.carrying:
-                distToGoal = distToTunnel
+                distToGoal = min(distToTunnel,distToHill) + 1
+                if worker.coords == myTunnel.coords or worker.coords == myHill.coords:
+                    distToGoal = 0
             else:
                 closestFoodDistance = HIGHCOST
                 for food in allFoods:
                     distCurrFood = approxDist(worker.coords, food.coords)
-                    if distCurrFood <= closestFoodDistance:
-                        closestFoodDistance = distCurrFood 
-                # distToGoal = min(distToTunnel, distToHill) + closestFoodDistance
-                distToGoal = closestFoodDistance
-            print(distToGoal, " distance for worker")
-            steps + distToGoal
-
-            # print("Foodcount = ", myInv.foodCount)
-            # print("Worker is carrying? ->" , worker.carrying)
+                    if worker.coords == food.coords:
+                        distToGoal = distToTunnel
+                    else:
+                        if distCurrFood <= closestFoodDistance:
+                            closestFoodDistance = distCurrFood      
+                        distFoodToHill = approxDist(food.coords, myHill.coords)
+                        distFoodToTunnel = approxDist(food.coords, myTunnel.coords)
+                        distToGoal = min(distFoodToTunnel, distFoodToHill) + closestFoodDistance
+                # distToGoal = closestFoodDistance
+            steps += distToGoal + 10*(11-myFoodCount)
 
         #aiming for a win through offense
         attackDist = 999999
@@ -320,10 +323,8 @@ class AIPlayer(Player):
                 steps -= 200
         # this is intended to keep an ant on the enemy hill if it happens to make its way there
         for ant in myAnts:
-
             if ant.coords == enemyHill.coords:
                 steps -= 100000
-        print(steps)
 
         return steps 
 
