@@ -95,12 +95,11 @@ class AIPlayer(Player):
     #Description: Gets the next move from the Player.
     #
     #Parameters:
-    #   currentState - The state of the current game waiting for the player's move (GameState)
+    #   currentState - The state of the current game 
+    #                   waiting for the player's move (GameState)
     #
-    #Return: The Move to be made
+    #Return: The Move to be made (Move)
     ##
-    
-    #Redefined getMove() for HW2B
     def getMove(self, currentState):
         #define specified lists
         frontierNodes=[]
@@ -153,7 +152,6 @@ class AIPlayer(Player):
 
 
         
-    
     ##
     #getAttack
     #Description: Gets the attack to be made from the Player
@@ -167,9 +165,18 @@ class AIPlayer(Player):
         #don't care, attack any enemy
         return enemyLocations[0]
 
+
     ##
-    # TODO: Complete this function.
+    # heuristicStepsToGoal
+    #
+    # Description: Evaluates a given state and returns a value based upon a 
+    # heuristic analysis.
+    #
+    #Parameters:
+    #   currentState - a clone of the current state (gameState)
     # 
+    #Return:
+    #   a numerical evaluation of a given state (float)
     ##
     def heuristicStepsToGoal(self, currentState):
         myState = currentState
@@ -297,8 +304,16 @@ class AIPlayer(Player):
         return steps 
 
 
-    # bestMove - iterates through a nodeList and determines what the best move is,
-    # according to our heuristic.
+    ##
+    #bestMove
+    #Description: iterates through a list of MoveNode objects and selects 
+    # the node with the best heuristic evaluation
+    #
+    #Parameters:
+    #   nodeList - a list of MoveNode objects [MoveNode]
+    #Return:
+    #   the best-evaluated MoveNode object (MoveNode)
+    ##
     def bestMove(self, nodeList):
         lowestEvalValue = 99999999
         bestNode = None
@@ -321,6 +336,16 @@ class AIPlayer(Player):
 
     # Expands a given node into a list of child nodes for each state.
     # Assigns an evaluation to each based on heuristic value.  
+    ##
+    ## expandNode
+    # Description: Expands a given node into a list of child nodes for a state.
+    # Assigns an evaluation to each child based on heuristic value.  
+    ##Parameters:
+    #   moveNode - the current MoveNode object which will be expanded (MoveNode)
+    #   
+    ## Return:  a list of lists of MoveNode obects. [MoveNode] 
+    # This list contains the children of the input node after expansion 
+    #   and heuristic evaluation. 
     def expandNode(self, moveNode):
         currentState = moveNode.currState
         moves = listAllLegalMoves(currentState)
@@ -328,7 +353,8 @@ class AIPlayer(Player):
         for move in moves:
             nextState = getNextStateAdversarial(currentState, move)
             eval = self.heuristicStepsToGoal(nextState)
-            nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, eval)
+            nodeAppend = MoveNode(currentState,move,nextState,\
+                        (moveNode.depth+1), moveNode, eval)
             myAnts = getCurrPlayerInventory(nextState).ants
             workers = [ant for ant in myAnts if ant.type == WORKER]
             if len(workers) <= 2:
@@ -338,9 +364,9 @@ class AIPlayer(Player):
 
 
     # This is a redefinition of the getNextState from AIPlayerUtils
-    # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
-    # This was a common bug many groups experienced when working on their agents.
-
+    # This one has the carrying toggle commented out so it does not trigger 
+    # when the ant is next to food. 
+    # This was a common bug many groups experienced when working on their agents
     def getNextState2(self,currentState, move):
         # variables I will need
         myGameState = currentState.fastclone()
@@ -427,6 +453,20 @@ class MoveNode():
         self.evalOfState = evalOfState
     
     
+## dummy minimax tree node class structure
+class MinMaxTreeNode():
+    def __init__(self, attachedMoveNode, alphaEval, betaEval, treeNodeValue, children):
+        self.attachedMoveNode = None
+        self.alphaEval = 0
+        self.betaEval = 0 
+        self.treeNodeValue = 0
+        self.children = []
+
+
+
+
+
+
 
 
 # TESTING DONE BELOW THIS POINT
