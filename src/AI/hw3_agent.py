@@ -34,7 +34,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "Squibbly Jr.")
+        super(AIPlayer,self).__init__(inputPlayerId, "HW3Agent")
     
     ##
     #getPlacement
@@ -89,35 +89,82 @@ class AIPlayer(Player):
             return moves
         else:
             return [(0, 0)]
-    
+
+
     ##
     #getMove
     #Description: Gets the next move from the Player.
     #
     #Parameters:
-    #   currentState - The state of the current game 
-    #                   waiting for the player's move (GameState)
+    #   currentState - The state of the current game waiting for the player's move (GameState)
     #
-    #Return: The Move to be made (Move)
+    #Return: The Move to be made
     ##
+    
+    #Redefined getMove() for HW2B
     def getMove(self, currentState):
         #define specified lists
         frontierNodes=[]
         expandedNodes=[]
-        currentStateEval = self.heuristicStepsToGoal(currentState) # evaluate current state with heuristic
-        currentStateRootNode = MoveNode(currentState,None,None,0,None,currentStateEval) # create node of current state
+        maxValue = self.evaluateMaxValue(currentState) # evaluate current state with heuristic
+        minimaxValue = 0
+        alpha = 0
+        beta = 0
+        currentStateRootNode = MoveNode(currentState,None,None,0,None,maxValue, alpha, beta) # create node of current state
         frontierNodes.append(currentStateRootNode) # append current state node to list
 
         deepestNode = 0 # depth of deepest node for flow control purposes
-        
+    
+        #minimax algorithm
+        while(deepestNode<3):
+            nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
+            nodeBest = None
+            #iterate through noddes in frontiernode list, find one with best score
+            
+            newFrontierNodes = []
+            for node in frontierNodes:
+                #print(str(node.depth))
+                stuff = self.expandNode(node)
+                for thing in stuff:
+                    newFrontierNodes.append(thing)
+                # newFrontierNodes.append(self.expandNode(node))
+                expandedNodes.append(node)
+                frontierNodes.remove(node)
+
+            for node in newFrontierNodes:
+                frontierNodes.append(node)
+
+            deepestNode += 1
+    
+
+        parent_dict = {} 
+        for node in newFrontierNodes:
+            if node not in parent_dict:
+                parent_dict[node.parent] = [node]
+            else:
+                parent_dict[node.parent].append(node)
+
+        for parent in parent_dict: 
+            smallChildVal = HIGHCOST 
+            bestChild = None
+            for child in parent_dict[parent]:
+                if child.maxValue < smallChildVal:
+                    smallChildVal = child.maxValue
+                    bestChild = child
+            parent.maxValue = bestChild.maxValue
+            print(parent.maxValue)
+
+
+
+        '''
         # setting the number inside the while() conditional ajusts how deep the agent searches
         while(deepestNode<3):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
             nodeBest = None
             #iterate through noddes in frontiernode list, find one with best score
             for node in frontierNodes:
-                if node.evalOfState < nodeBestScore:
-                    nodeBestScore = node.evalOfState
+                if node.maxValue < nodeBestScore:
+                    nodeBestScore = node.maxValue
                     nodeBest = node
             # remove that node from the frontier, add it to the expanded nodes, then expand it
             frontierNodes.remove(nodeBest)
@@ -134,9 +181,9 @@ class AIPlayer(Player):
 
         # find the lowest-costing node on frontier, then select it
         for node in frontierNodes:
-            if node.evalOfState < lowestFrontierCost:
+            if node.maxValue < lowestFrontierCost:
                 lowestFrontierNode = node
-                lowestFrontierCost = node.evalOfState
+                lowestFrontierCost = node.maxValue
         currNode=lowestFrontierNode
 
         # retrace selected node to find the parent node
@@ -147,11 +194,13 @@ class AIPlayer(Player):
             if currNode.depth == 1:
                 break
         assert (currNode.depth == 1), "Not at proper depth!" # sanity check
+        '''
         return currNode.moveToMake # return the move of the selected node
 
 
 
         
+    
     ##
     #getAttack
     #Description: Gets the attack to be made from the Player
@@ -165,20 +214,11 @@ class AIPlayer(Player):
         #don't care, attack any enemy
         return enemyLocations[0]
 
-
     ##
-    # heuristicStepsToGoal
-    #
-    # Description: Evaluates a given state and returns a value based upon a 
-    # heuristic analysis.
-    #
-    #Parameters:
-    #   currentState - a clone of the current state (gameState)
+    # TODO: Complete this function.
     # 
-    #Return:
-    #   a numerical evaluation of a given state (float)
     ##
-    def heuristicStepsToGoal(self, currentState):
+    def evaluateMaxValue(self, currentState):
         myState = currentState
         steps = 0
 
@@ -304,16 +344,8 @@ class AIPlayer(Player):
         return steps 
 
 
-    ##
-    #bestMove
-    #Description: iterates through a list of MoveNode objects and selects 
-    # the node with the best heuristic evaluation
-    #
-    #Parameters:
-    #   nodeList - a list of MoveNode objects [MoveNode]
-    #Return:
-    #   the best-evaluated MoveNode object (MoveNode)
-    ##
+    # bestMove - iterates through a nodeList and determines what the best move is,
+    # according to our heuristic.
     def bestMove(self, nodeList):
         lowestEvalValue = 99999999
         bestNode = None
@@ -336,37 +368,30 @@ class AIPlayer(Player):
 
     # Expands a given node into a list of child nodes for each state.
     # Assigns an evaluation to each based on heuristic value.  
-    ##
-    ## expandNode
-    # Description: Expands a given node into a list of child nodes for a state.
-    # Assigns an evaluation to each child based on heuristic value.  
-    ##Parameters:
-    #   moveNode - the current MoveNode object which will be expanded (MoveNode)
-    #   
-    ## Return:  a list of lists of MoveNode obects. [MoveNode] 
-    # This list contains the children of the input node after expansion 
-    #   and heuristic evaluation. 
     def expandNode(self, moveNode):
         currentState = moveNode.currState
         moves = listAllLegalMoves(currentState)
         nodesToReturn = []
+        alpha = 0
+        beta = 999999
         for move in moves:
             nextState = getNextStateAdversarial(currentState, move)
-            eval = self.heuristicStepsToGoal(nextState)
-            nodeAppend = MoveNode(currentState,move,nextState,\
-                        (moveNode.depth+1), moveNode, eval)
+            maxVal = self.evaluateMaxValue(nextState)
+            nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, maxVal, alpha, beta)
             myAnts = getCurrPlayerInventory(nextState).ants
             workers = [ant for ant in myAnts if ant.type == WORKER]
-            if len(workers) <= 2:
+            rangedSoldiers = [ant for ant in myAnts if ant.type == R_SOLDIER]
+            soldiers = [ant for ant in myAnts if ant.type == SOLDIER]
+            if len(workers) <= 2 and len(rangedSoldiers) <= 0 and len(soldiers) <=2:
                 nodesToReturn.append(nodeAppend)
         return nodesToReturn
 
 
 
     # This is a redefinition of the getNextState from AIPlayerUtils
-    # This one has the carrying toggle commented out so it does not trigger 
-    # when the ant is next to food. 
-    # This was a common bug many groups experienced when working on their agents
+    # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
+    # This was a common bug many groups experienced when working on their agents.
+
     def getNextState2(self,currentState, move):
         # variables I will need
         myGameState = currentState.fastclone()
@@ -444,29 +469,19 @@ class AIPlayer(Player):
 #       parent - node object, reference to the parent node
 #       evalOfState - float/int/some number resulting from heuristic examination of the nextState 
 class MoveNode():
-    def __init__(self, currState, moveToMake, nextState, depth, parent, evalOfState):
+    def __init__(self, currState, moveToMake, nextState, depth, parent, minimax, alp, bet):
         self.moveToMake = moveToMake
         self.currState = currState
         self.nextState = nextState
         self.depth = depth
         self.parent = parent
-        self.evalOfState = evalOfState
+        self.maxValue = minimax #aka minimax value.
+        self.alpha = alp
+        self.beta = bet
+
+
     
     
-## dummy minimax tree node class structure
-class MinMaxTreeNode():
-    def __init__(self, attachedMoveNode, alphaEval, betaEval, treeNodeValue, children):
-        self.attachedMoveNode = None
-        self.alphaEval = 0
-        self.betaEval = 0 
-        self.treeNodeValue = 0
-        self.children = []
-
-
-
-
-
-
 
 
 # TESTING DONE BELOW THIS POINT
@@ -495,7 +510,7 @@ def getGameState():
     return state
 
 # make a simple game state to test scores
-def heuristicStepsToGoalTest():
+def evaluateMaxValueTest():
     # get game state
     state = getGameState()
     myAnt = Ant((0, 6), WORKER, 0)
@@ -504,7 +519,7 @@ def heuristicStepsToGoalTest():
     state.inventories[1 - state.whoseTurn].ants.append(enemyAnt)
     #making sure our heuristic score is a reasonable number
     score = 100
-    testScore = heuristicStepsToGoal(state)
+    testScore = evaluateMaxValue(state)
     if (score > testScore):
         print("Heuristic is too high")
     if (testScore == 0):
