@@ -13,7 +13,7 @@ import time
 HIGHCOST = 999999999999999 # arbitrary constant that will help us later
 
 ## @Author Samuel Lemly
-## @Author Hera Malik
+## @Author Gabe Marcial
 
 ##
 #AIPlayer
@@ -100,7 +100,6 @@ class AIPlayer(Player):
     #
     #Return: The Move to be made
     ##
-    
     #Redefined getMove() for HW2B
     def getMove(self, currentState):
         #define specified lists
@@ -114,57 +113,62 @@ class AIPlayer(Player):
         frontierNodes.append(currentStateRootNode) # append current state node to list
 
         deepestNode = 0 # depth of deepest node for flow control purposes
-		#minimax algorithm
-        try:
-			while(deepestNode<3):
-				nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
-				nodeBest = None
-				#iterate through nodes in frontiernode list, find one with best score
-				
-				newFrontierNodes = []
-				for node in frontierNodes:
-					children = self.expandNode(node)
-					for child in children:
-						newFrontierNodes.append(child)
-					# newFrontierNodes.append(self.expandNode(node))
-					expandedNodes.append(node)
-					frontierNodes.remove(node)
+		
+        
+        
+        #minimax algorithm
+        while(deepestNode<3):
+            nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
+            nodeBest = None
+            
+            newFrontierNodes = []
+            for node in frontierNodes:
+                stuff = self.expandNode(node)
+                for thing in stuff:
+                    newFrontierNodes.append(thing)
+                # newFrontierNodes.append(self.expandNode(node))
+                expandedNodes.append(node)
+                frontierNodes.remove(node)
 
-				for node in newFrontierNodes:
-					frontierNodes.append(node)
-
-				deepestNode += 1
+            for node in newFrontierNodes:
+                frontierNodes.append(node)
+            deepestNode += 1
+    
+        
+        parent_dict = {} 
+        for node in newFrontierNodes:
+            if node not in parent_dict:
+                parent_dict[node.parent] = [node]
+            else:
+                parent_dict[node.parent].append(node)
+        firstOrderChildren = []
+        for parent in parent_dict: 
+            smallChildVal = HIGHCOST 
+            bestChild = None
+            for child in parent_dict[parent]:
+                if child.maxValue < smallChildVal:
+                    smallChildVal = child.maxValue
+                    bestChild = child
+            parent.maxValue = bestChild.maxValue
+            print(parent.maxValue)
+            if parent.depth == 1:
+                firstOrderChildren.append(parent)
+            
+        #while bestChild.depth > 1:
+        #    bestChild = bestChild.parent
+        bestFirstChild = None
+        bestFirstChildval = HIGHCOST
+        for firstChild in firstOrderChildren:
+            if firstChild.maxValue < bestFirstChildval:
+                bestFirstChild = firstChild
+                bestFirstChildval = firstChild.maxValue
+        
+        assert bestFirstChild.depth == 1, "Not a first-level child of current state"
+        toReturn = bestFirstChild
 		
 
-			parent_dict = {} 
-		
-			for node in newFrontierNodes:
-				if node not in parent_dict:
-					parent_dict[node.parent] = [node]
-				else:
-					parent_dict[node.parent].append(node)
-
-			
-			for parent in parent_dict: 
-				smallChildVal = HIGHCOST 
-				bestChild = None
-				for child in parent_dict[parent]:
-					if child.maxValue < smallChildVal:
-						smallChildVal = child.maxValue
-						bestChild = child
-				parent.maxValue = bestChild.maxValue
-				print(parent.maxValue)
-			
-			while bestChild.depth > 1:
-				bestChild = bestChild.parent
-			print(bestChild.depth)
-				
-		except Exception as e:
-			print("Error: ", e)
-		currNode = None
 
         '''
-		
         # setting the number inside the while() conditional ajusts how deep the agent searches
         while(deepestNode<3):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
@@ -203,10 +207,11 @@ class AIPlayer(Player):
                 break
         assert (currNode.depth == 1), "Not at proper depth!" # sanity check
         '''
+        
         try:
-			return currNode.moveToMake # return the move of the selected node
-		except AttributeError as ae:
-			print("Working as intended","\n\n***********************\n\n",ae)
+            return toReturn.moveToMake # return the move of the selected node
+        except NameError as ne:
+            print("Working as intended","\n\n***********************\n\n",ne)
 
 
         
@@ -227,6 +232,7 @@ class AIPlayer(Player):
     ##
     #evaluateMaxValue
     #Description: heuristic analysis of a game state. This is a utility function.
+
     #
     #Parameters:
     #   currentState - A clone of the current state (GameState)
@@ -493,6 +499,7 @@ class MoveNode():
         self.beta = bet
 
 
+    
     
 
 
