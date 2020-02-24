@@ -77,6 +77,7 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId):
         super(AIPlayer,self).__init__(inputPlayerId, "doomer")
+        self.whoami = 0
     
     ##
     #getPlacement
@@ -145,6 +146,7 @@ class AIPlayer(Player):
     
     #Redefined getMove() for HW2B
     def getMove(self, currentState):
+        self.whoami = currentState.whoseTurn
         currentStateValue = self.evaluateMaxValue(currentState)
         currentStateRootNode = MMTNode(currentState,None,
                     [],0,HIGHCOST,LOWCOST,currentStateValue,None)
@@ -155,17 +157,14 @@ class AIPlayer(Player):
     def minimaxAlg(self, rootNode):
         if rootNode.depth == DEPTHLIM:
             return [rootNode.value, rootNode.move]
-        if rootNode.state.whoseTurn == self.playerId:
-            myTurn = True
+        if rootNode.state.whoseTurn == self.whoami: myTurn = True
         else: myTurn = False
         currState = rootNode.state
-
-        legalMoves = listAllLegalMoves(rootNode.state)
+        legalMoves = listAllLegalMoves(currState)
         for move in legalMoves:
-            nextState = getNextStateAdversarial(currState,move)
-            if move.moveType == END:
-                nextState.whoseTurn = 1-nextState.whoseTurn 
-
+            nextState = self.getNextStateAdversarial(currState,move)
+            # if move.moveType == END:
+            #     nextState.whoseTurn = 1-nextState.whoseTurn 
             newDepth = rootNode.depth + 1
             stateEval = self.evaluateMaxValue(nextState)
             newNode = MMTNode(nextState, rootNode,
@@ -173,39 +172,31 @@ class AIPlayer(Player):
             rootNode.children.append(newNode)
             
         toReturn=[0,None]
-        if myTurn:
-            bestValue = HIGHCOST
-            for child in rootNode.children:
-                childResults = self.minimaxAlg(child)
-                childVal = childResults[0]
-                childMove = childResults[1]
-                if childVal < bestValue:
-                    toReturn[0] = childVal
-                    toReturn[1] = childMove
-        else: 
+
+        if myTurn: #maximizing player case
             bestValue = LOWCOST
             for child in rootNode.children:
                 childResults = self.minimaxAlg(child)
                 childVal = childResults[0]
                 childMove = childResults[1]
                 if childVal > bestValue:
+                    bestValue = childVal
                     toReturn[0] = childVal
-                    toReturn[1] = childMove
-                    
-        # print(toReturn[1].moveType)
-        return toReturn
+                    toReturn[1] = child.move
+            return toReturn
+        else: # minimizing player case
+            bestValue = HIGHCOST
+            for child in rootNode.children:
+                childResults = self.minimaxAlg(child)
+                childVal = childResults[0]
+                childMove = childResults[1]
+                if childVal < bestValue:
+                    bestValue = childVal
+                    toReturn[0] = childVal
+                    toReturn[1] = child.move
+            return toReturn            
+        
 
-
-
-
-
-
-
-
-    # TODO: Documentation
-    def deepCopyNode(self, node): #MOVENODES ONLY
-        return MoveNode(node.currState,node.moveToMake, node.nextState,\
-            node.depth, node.parent, node.maxValue, node.alpha, node.beta)
 
 
         
@@ -232,7 +223,7 @@ class AIPlayer(Player):
         steps = 0
 
         #it's me!
-        me = myState.whoseTurn
+        me = self.whoami
         enemy = 1-me
 
         #fetching constructions
@@ -242,7 +233,7 @@ class AIPlayer(Player):
 
 
         #finding out what belongs to whom
-        myInv = getCurrPlayerInventory(myState)
+        myInv = currentState.inventories[self.whoami]
         myFoodCount = myInv.foodCount
         # my items/constructs/ants
         myTunnel = myInv.getTunnels()[0]
@@ -254,7 +245,7 @@ class AIPlayer(Player):
         myQueen = myInv.getQueen()
         myAnts = myInv.ants
         # enemy items/constructs/ants
-        enemyInv = getEnemyInv(self, myState)
+        enemyInv = currentState.inventories[1-self.whoami]
         enemyTunnel = enemyInv.getTunnels()[0]
         enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
         enemyWorkers = getAntList(myState, enemy, (WORKER,))
@@ -263,7 +254,7 @@ class AIPlayer(Player):
         enemyDrones = getAntList(myState, enemy, (DRONE,))
         enemyQueen = enemyInv.getQueen()
         #arbitrary food distance value for workers to work around
-        foodDist = 9999999
+        foodDist = HIGHCOST
         foodTurns = 0
         isTunnel = False
 
@@ -291,6 +282,7 @@ class AIPlayer(Player):
             steps += 20
         if len(mySoldiers) < 1:
             steps += 25
+        
         
         # iteration through worker array to 
         for worker in myWorkers: 
@@ -349,8 +341,8 @@ class AIPlayer(Player):
             if ant.coords == enemyHill.coords:
                 steps -= 100000
         if len(myWorkers) >= 2:
-            steps -= 1000
-        return steps 
+            steps += 500
+        return -(steps) 
 
 
     # bestMove - iterates through a nodeList and determines what the best move is,
@@ -384,7 +376,7 @@ class AIPlayer(Player):
         alpha = 0
         beta = 999999
         for move in moves:
-            nextState = getNextStateAdversarial(currentState, move)
+            nextState = self.getNextStateAdversarial(currentState, move)
             maxVal = self.evaluateMaxValue(nextState)
             nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, maxVal, alpha, beta)
             # myAnts = getCurrPlayerInventory(nextState).ants
@@ -397,9 +389,29 @@ class AIPlayer(Player):
 
 
 
+    def getNextStateAdversarial(currentState, move):
+        # variables I will need
+        nextState = getNextState2(currentState, move)
+        myInv = getCurrPlayerInventory(nextState)
+        myAnts = myInv.ants
+
+        # If an ant is moved update their coordinates and has moved
+        if move.moveType == MOVE_ANT:
+            startingCoord = move.coordList[0]
+            for ant in myAnts:
+                if ant.coords == startingCoord:
+                    ant.hasMoved = True
+        elif move.moveType == END:
+            for ant in myAnts:
+                ant.hasMoved = False
+            nextState.whoseTurn = 1 - currentState.whoseTurn
+        return nextState
+
     # This is a redefinition of the getNextState from AIPlayerUtils
     # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
     # This was a common bug many groups experienced when working on their agents.
+
+
 
     def getNextState2(self,currentState, move):
         # variables I will need
