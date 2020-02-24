@@ -11,10 +11,9 @@ from AIPlayerUtils import *
 import time
 
 HIGHCOST = 999999999999999 # arbitrary constant that will help us later
-DEPTHLIM = 3
 
 ## @Author Samuel Lemly
-## @Author Gabe Marcial
+## @Author Hera Malik
 
 ##
 #AIPlayer
@@ -35,7 +34,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "HW3Agent")
+        super(AIPlayer,self).__init__(inputPlayerId, "zoomer")
     
     ##
     #getPlacement
@@ -101,6 +100,7 @@ class AIPlayer(Player):
     #
     #Return: The Move to be made
     ##
+    
     #Redefined getMove() for HW2B
     def getMove(self, currentState):
         #define specified lists
@@ -108,68 +108,98 @@ class AIPlayer(Player):
         expandedNodes=[]
         maxValue = self.evaluateMaxValue(currentState) # evaluate current state with heuristic
         minimaxValue = 0
-        alpha = -(HIGHCOST)
-        beta = HIGHCOST
+        alpha = 0
+        beta = 0
         currentStateRootNode = MoveNode(currentState,None,None,0,None,maxValue, alpha, beta) # create node of current state
         frontierNodes.append(currentStateRootNode) # append current state node to list
 
         deepestNode = 0 # depth of deepest node for flow control purposes
-		
-        
-        
-        #minimax algorithm
+    
+        # create nodes down to depth limit specified in while-loop conditional
+        allnodes = []        
+        allnodes.append(currentStateRootNode)
         while(deepestNode<3):
-            nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
-            nodeBest = None
             newFrontierNodes = []
             for node in frontierNodes:
-                stuff = self.expandNode(node)
-                for thing in stuff:
-                    newFrontierNodes.append(thing)
-                # newFrontierNodes.append(self.expandNode(node))
+                #print(str(node.depth))
+                children = self.expandNode(node)
+                for kid in children:
+                    allnodes.append(kid)
+                    newFrontierNodes.append(kid)
                 expandedNodes.append(node)
                 frontierNodes.remove(node)
             for node in newFrontierNodes:
                 frontierNodes.append(node)
             deepestNode += 1
-
-        parent_dict = {} 
-        for node in newFrontierNodes:
-            if node.parent not in parent_dict:
-                parent_dict[node.parent] = [node]
-            else:
-                parent_dict[node.parent].append(node)
-        firstOrderChildren = []
-        for parent in parent_dict: 
-            smallChildVal = HIGHCOST 
-            bestChild = None
-            for child in parent_dict[parent]:
-                if child.maxValue < smallChildVal:
-                    smallChildVal = child.maxValue
-                    bestChild = child
-            parent.maxValue = bestChild.maxValue
-            if parent.alpha > bestChild.maxValue:
-                parent.alpha = bestChild.maxValue
-            if parent.depth == 1:
-                firstOrderChildren.append(parent)
-            
-        #while bestChild.depth > 1:
-        #    bestChild = bestChild.parent
-        bestFirstChild = None
-        bestFirstChildval = HIGHCOST
-        print(len(firstOrderChildren))
-        for firstChild in firstOrderChildren:
-            if firstChild.maxValue < bestFirstChildval:
-                bestFirstChild = firstChild
-                bestFirstChildval = firstChild.maxValue
         
-        assert bestFirstChild.depth == 1, "Not a first-level child of current state"
-        toReturn = bestFirstChild
-		
-        try:
-            return toReturn.moveToMake # return the move of the selected node
-        except Exception as ne:
-            print("Working as intended","\n\n***********************\n\n",ne)
+        firstOrder = []
+        currdepth = 3       
+        while currdepth >= 1:
+            # print("************ START ",currdepth,"************")
+            for node in allnodes:
+                if node.depth == currdepth:
+                    parent = node.parent
+                    if parent.maxValue > node.maxValue:
+                        # print(node.maxValue, node)
+                        parent.maxValue = node.maxValue
+                if currdepth==1:
+                    firstOrder.append(node)
+            # print("************ END ",currdepth,"************")
+            currdepth -=1    
+        smallChildVal = HIGHCOST 
+        bestOption = Move(END,[(0,0)],None)  
+        for node in firstOrder:
+            if node.maxValue < smallChildVal:
+                print(node, "*****", node.maxValue)
+                bestOption = self.deepCopyNode(node).moveToMake
+                smallChildVal = node.maxValue
+        return bestOption
+
+    # TODO: Documentation
+    def deepCopyNode(self, node):
+        return MoveNode(node.currState,node.moveToMake, node.nextState, node.depth\
+                            , node.parent, node.maxValue, node.alpha, node.beta)
+
+
+        # parent_dict = {} 
+        # for node in newFrontierNodes:
+        #     if node.parent not in parent_dict:
+        #         parent_dict[node.parent] = [node]
+        #     else:
+        #         parent_dict[node.parent].append(node)
+
+
+        # for parent in parent_dict: 
+        #     smallChildVal = HIGHCOST 
+        #     bestOption = None
+        #     for child in parent_dict[parent]:
+        #         if child.maxValue < smallChildVal:
+        #             smallChildVal = child.maxValue
+        #             # child.beta = child.maxValue
+        #             # parent.beta = child.maxValue
+        #             # parent.beta = child.maxValue
+        #             bestOption = child
+        #     parent.maxValue = bestOption.maxValue
+        #     print(parent.maxValue)
+        # currentDepth = 3
+        # while currentDepth > 1:
+        #     minVal = 99999      #arbitrarily large. 
+        #     #what is this doing?
+        #     #iterate through the 
+        #     for node in newFrontierNodes:
+        #         if(node.maxValue < minVal):
+        #             minVal = node.maxValue
+        #         if(node.parent.maxValue < minVal):
+        #             node.parent.maxValue = minVal
+                     
+            
+        #     currentDepth -=1
+
+
+
+
+       # return currNode.moveToMake # return the move of the selected node
+
 
 
         
@@ -188,12 +218,8 @@ class AIPlayer(Player):
         return enemyLocations[0]
 
     ##
-    #evaluateMaxValue
-    #Description: heuristic analysis of a game state. This is a utility function.
-
-    #
-    #Parameters:
-    #   currentState - A clone of the current state (GameState)
+    # TODO: Complete this function.
+    # 
     ##
     def evaluateMaxValue(self, currentState):
         myState = currentState
@@ -350,7 +376,7 @@ class AIPlayer(Player):
         moves = listAllLegalMoves(currentState)
         nodesToReturn = []
         alpha = 0
-        beta = HIGHCOST
+        beta = 999999
         for move in moves:
             nextState = getNextStateAdversarial(currentState, move)
             maxVal = self.evaluateMaxValue(nextState)
@@ -359,9 +385,10 @@ class AIPlayer(Player):
             workers = [ant for ant in myAnts if ant.type == WORKER]
             rangedSoldiers = [ant for ant in myAnts if ant.type == R_SOLDIER]
             soldiers = [ant for ant in myAnts if ant.type == SOLDIER]
-            # if len(workers) <= 2 and len(rangedSoldiers) <= 0 and len(soldiers) <=2:    
-            nodesToReturn.append(nodeAppend)
+            if len(workers) <= 2 and len(rangedSoldiers) <= 0 and len(soldiers) <=2:
+                nodesToReturn.append(nodeAppend)
         return nodesToReturn
+
 
 
     # This is a redefinition of the getNextState from AIPlayerUtils
