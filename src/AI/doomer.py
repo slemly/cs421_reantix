@@ -162,7 +162,7 @@ class AIPlayer(Player):
         currState = rootNode.state
         legalMoves = listAllLegalMoves(currState)
         for move in legalMoves:
-            nextState = self.getNextStateAdversarial(currState,move)
+            nextState = self.getNextStateAdversarial2(currState,move)
             # if move.moveType == END:
             #     nextState.whoseTurn = 1-nextState.whoseTurn 
             newDepth = rootNode.depth + 1
@@ -376,7 +376,7 @@ class AIPlayer(Player):
         alpha = 0
         beta = 999999
         for move in moves:
-            nextState = self.getNextStateAdversarial(currentState, move)
+            nextState = self.getNextStateAdversarial2(currentState, move)
             maxVal = self.evaluateMaxValue(nextState)
             nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, maxVal, alpha, beta)
             # myAnts = getCurrPlayerInventory(nextState).ants
@@ -389,9 +389,9 @@ class AIPlayer(Player):
 
 
 
-    def getNextStateAdversarial(currentState, move):
+    def getNextStateAdversarial2(self,currentState, move):
         # variables I will need
-        nextState = getNextState2(currentState, move)
+        nextState = self.getNextState2(currentState, move)
         myInv = getCurrPlayerInventory(nextState)
         myAnts = myInv.ants
 
