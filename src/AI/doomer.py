@@ -275,7 +275,6 @@ class AIPlayer(Player):
             steps -= 10000
         if len(myWorkers) < 1:
             steps += 150
-        
         if myQueen.health == 0:
             steps += 999999999
         if myQueen.coords == myHill.coords:
