@@ -153,7 +153,6 @@ class AIPlayer(Player):
         return self.minimaxAlg(currentStateRootNode)[1]
     #END getMove()
 
-
     def minimaxAlg(self, rootNode):
         if rootNode.depth == DEPTHLIM:
             return [rootNode.value, rootNode.move]
@@ -162,7 +161,7 @@ class AIPlayer(Player):
         currState = rootNode.state
         legalMoves = listAllLegalMoves(currState)
         for move in legalMoves:
-            nextState = self.getNextStateAdversarial2(currState,move)
+            nextState = getNextStateAdversarial(currState,move)
             # if move.moveType == END:
             #     nextState.whoseTurn = 1-nextState.whoseTurn 
             newDepth = rootNode.depth + 1
@@ -197,6 +196,15 @@ class AIPlayer(Player):
             return toReturn            
         
 
+
+
+
+
+
+
+  
+        return MoveNode(node.currState,node.moveToMake, node.nextState,\
+            node.depth, node.parent, node.maxValue, node.alpha, node.beta)
 
 
         
@@ -254,7 +262,7 @@ class AIPlayer(Player):
         enemyDrones = getAntList(myState, enemy, (DRONE,))
         enemyQueen = enemyInv.getQueen()
         #arbitrary food distance value for workers to work around
-        foodDist = HIGHCOST
+        foodDist = 9999999
         foodTurns = 0
         isTunnel = False
 
@@ -267,6 +275,7 @@ class AIPlayer(Player):
             steps -= 10000
         if len(myWorkers) < 1:
             steps += 150
+        
         if myQueen.health == 0:
             steps += 999999999
         if myQueen.coords == myHill.coords:
@@ -281,38 +290,63 @@ class AIPlayer(Player):
         elif len(myDrones) > 4:
             steps += 20
         if len(mySoldiers) < 1:
-            steps += 25
+            steps += 50
+        if len(myRSoldiers) >=1:
+            steps += 50
         
+        for worker in myWorkers:
+            distToGoal = HIGHCOST
+            distToTunnel = approxDist(worker.coords, myTunnel.coords)
+            distToHill = approxDist(worker.coords, myHill.coords)
+
+            if worker.carrying:
+                distToGoal = min(distToTunnel,distToHill) + 1
+                if worker.coords == myTunnel.coords or worker.coords == myHill.coords:
+                    distToGoal = 0
+            else:
+                closestFoodDistance = HIGHCOST
+                for food in allFoods:
+                    distCurrFood = approxDist(worker.coords, food.coords)
+                    if worker.coords == food.coords:
+                        distToGoal = distToTunnel
+                    else:
+                        if distCurrFood <= closestFoodDistance:
+                            closestFoodDistance = distCurrFood      
+                        distFoodToHill = approxDist(food.coords, myHill.coords)
+                        distFoodToTunnel = approxDist(food.coords, myTunnel.coords)
+                        distToGoal = min(distFoodToTunnel, distFoodToHill) + closestFoodDistance
+                # distToGoal = closestFoodDistance
+            steps += distToGoal + 10*(11-myFoodCount)
         
         # iteration through worker array to 
-        for worker in myWorkers: 
-            if worker.carrying: #worker has food; go to the hill
-                distToTunnel = approxDist(worker.coords, myTunnel.coords)
-                distToHill = approxDist(worker.coords, myHill.coords)
-                foodDist = min(distToTunnel, distToHill) - 0.2
-                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
-                    foodDist = 0.2 #scalar for good food retrieval
-            else: # Otherwise, we want to move toward the food
-                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
-                    foodDist = 0.2 #scalar for good food retrieval
-                closestFoodDist = 99999
-                bestFood = None
-                for food in allFoods:
-                    distToCurrFood = approxDist(worker.coords, food.coords)
-                    if worker.coords == food.coords:
-                        bestFood = food
-                        closestFoodDist = 0.01 #scalar for good food retrieval
-                        break
-                    if distToCurrFood <= closestFoodDist:
-                        closestFoodDist = distToCurrFood
-                        bestFood = food
-                foodDist = closestFoodDist
-                if approxDist(myQueen.coords, bestFood.coords) <= approxDist(worker.coords, bestFood.coords):
-                    steps += 75  
-            steps += foodDist * (11 - myInv.foodCount)
+        # for worker in myWorkers: 
+        #     if worker.carrying: #worker has food; go to the hill
+        #         distToTunnel = approxDist(worker.coords, myTunnel.coords)
+        #         distToHill = approxDist(worker.coords, myHill.coords)
+        #         foodDist = min(distToTunnel, distToHill) - 0.2
+        #         if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+        #             foodDist = 0.2 #scalar for good food retrieval
+        #     else: # Otherwise, we want to move toward the food
+        #         if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+        #             foodDist = 0.2 #scalar for good food retrieval
+        #         closestFoodDist = 99999
+        #         bestFood = None
+        #         for food in allFoods:
+        #             distToCurrFood = approxDist(worker.coords, food.coords)
+        #             if worker.coords == food.coords:
+        #                 bestFood = food
+        #                 closestFoodDist = 0.01 #scalar for good food retrieval
+        #                 break
+        #             if distToCurrFood <= closestFoodDist:
+        #                 closestFoodDist = distToCurrFood
+        #                 bestFood = food
+        #         foodDist = closestFoodDist
+        #         if approxDist(myQueen.coords, bestFood.coords) <= approxDist(worker.coords, bestFood.coords):
+        #             steps += 75  
+        #     steps += foodDist * (11 - myInv.foodCount)
 
         #aiming for a win through offense
-        attackDist = 999999
+        attackDist = HIGHCOST
         for drone in myDrones:
             # primary target for drones is enemy queen
             if enemyQueen != None:            
@@ -340,8 +374,8 @@ class AIPlayer(Player):
         for ant in myAnts:
             if ant.coords == enemyHill.coords:
                 steps -= 100000
-        if len(myWorkers) >= 2:
-            steps += 500
+        if len(myWorkers) == 2:
+            steps -= 500
         return -(steps) 
 
 
@@ -376,7 +410,7 @@ class AIPlayer(Player):
         alpha = 0
         beta = 999999
         for move in moves:
-            nextState = self.getNextStateAdversarial2(currentState, move)
+            nextState = getNextStateAdversarial(currentState, move)
             maxVal = self.evaluateMaxValue(nextState)
             nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, maxVal, alpha, beta)
             # myAnts = getCurrPlayerInventory(nextState).ants
@@ -389,29 +423,9 @@ class AIPlayer(Player):
 
 
 
-    def getNextStateAdversarial2(self,currentState, move):
-        # variables I will need
-        nextState = self.getNextState2(currentState, move)
-        myInv = getCurrPlayerInventory(nextState)
-        myAnts = myInv.ants
-
-        # If an ant is moved update their coordinates and has moved
-        if move.moveType == MOVE_ANT:
-            startingCoord = move.coordList[0]
-            for ant in myAnts:
-                if ant.coords == startingCoord:
-                    ant.hasMoved = True
-        elif move.moveType == END:
-            for ant in myAnts:
-                ant.hasMoved = False
-            nextState.whoseTurn = 1 - currentState.whoseTurn
-        return nextState
-
     # This is a redefinition of the getNextState from AIPlayerUtils
     # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
     # This was a common bug many groups experienced when working on their agents.
-
-
 
     def getNextState2(self,currentState, move):
         # variables I will need
