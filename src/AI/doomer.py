@@ -323,9 +323,9 @@ class AIPlayer(Player):
                         steps += 20
         except Exception as e:
             print(e)
-        for food in allFoods:
-            if myQueen.coords == food.coords:
-                steps += 20
+        # for food in allFoods:
+        #     if myQueen.coords == food.coords:
+        #         steps += 20
         if len(myDrones) < 1:
             steps += 35
         elif len(myDrones) < 2:

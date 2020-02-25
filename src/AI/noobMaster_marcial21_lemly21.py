@@ -75,7 +75,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "boomer")
+        super(AIPlayer,self).__init__(inputPlayerId, "noobMaster")
         self.whoami = 0
     
     ##
@@ -398,17 +398,6 @@ class AIPlayer(Player):
         return -(steps) 
 
 
-    # bestMove - iterates through a nodeList and determines what the best move is,
-    # according to our heuristic.
-    def bestMove(self, nodeList):
-        lowestEvalValue = 99999999
-        bestNode = None
-        for node in nodeList:
-            if node.evalOfState <= lowestEvalValue:
-                lowestEvalValue = node.evalOfState
-                bestNode = node
-        return bestNode
-
     ##
     #registerWin
     #
@@ -419,88 +408,5 @@ class AIPlayer(Player):
         pass
 
 
-    # Expands a given node into a list of child nodes for each state.
-    # Assigns an evaluation to each based on heuristic value.  
-    def expandNode(self, moveNode):
-        currentState = moveNode.currState
-        moves = listAllLegalMoves(currentState)
-        nodesToReturn = []
-        alpha = 0
-        beta = 999999
-        for move in moves:
-            nextState = getNextStateAdversarial(currentState, move)
-            maxVal = self.evaluateMaxValue(nextState)
-            nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, maxVal, alpha, beta)
-        return nodesToReturn
 
-
-    # This is a redefinition of the getNextState from AIPlayerUtils
-    # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
-    # This was a common bug many groups experienced when working on their agents.
-    def getNextState2(self,currentState, move):
-        # variables I will need
-        myGameState = currentState.fastclone()
-        myInv = getCurrPlayerInventory(myGameState)
-        me = myGameState.whoseTurn
-        myAnts = myInv.ants
-        myTunnels = myInv.getTunnels()
-        myAntHill = myInv.getAnthill()
-
-        # If enemy ant is on my anthill or tunnel update capture health
-        ant = getAntAt(myGameState, myAntHill.coords)
-        if ant is not None:
-            if ant.player != me:
-                myAntHill.captureHealth -= 1
-
-        # If an ant is built update list of ants
-        antTypes = [WORKER, DRONE, SOLDIER, R_SOLDIER]
-        if move.moveType == BUILD:
-            if move.buildType in antTypes:
-                ant = Ant(myInv.getAnthill().coords, move.buildType, me)
-                myInv.ants.append(ant)
-                # Update food count depending on ant built
-                myInv.foodCount -= UNIT_STATS[move.buildType][COST]
-            # ants are no longer allowed to build tunnels, so this is an error
-            elif move.buildType == TUNNEL:
-                print("Attempted tunnel build in getNextState()")
-                return currentState
-
-        # If an ant is moved update their coordinates and has moved
-        elif move.moveType == MOVE_ANT:
-            newCoord = move.coordList[-1]
-            startingCoord = move.coordList[0]
-            for ant in myAnts:
-                if ant.coords == startingCoord:
-                    ant.coords = newCoord
-                    # TODO: should this be set true? Design decision
-                    ant.hasMoved = False
-                    # If an ant is carrying food and ends on the anthill or tunnel drop the food
-                    if ant.carrying and ant.coords == myInv.getAnthill().coords:
-                        myInv.foodCount += 1
-                        # ant.carrying = False
-                    for tunnels in myTunnels:
-                        if ant.carrying and (ant.coords == tunnels.coords):
-                            myInv.foodCount += 1
-                            # ant.carrying = False
-                    # If an ant doesn't have food and ends on the food grab food
-                    if not ant.carrying and ant.type == WORKER:
-                        foods = getConstrList(myGameState, 2, [FOOD])
-                        for food in foods:
-                            if food.coords == ant.coords:
-                                # ant.carrying = True
-                                pass
-                    # If my ant is close to an enemy ant attack it
-                    attackable = listAttackable(ant.coords, UNIT_STATS[ant.type][RANGE])
-                    for coord in attackable:
-                        foundAnt = getAntAt(myGameState, coord)
-                        if foundAnt is not None:  # If ant is adjacent my ant
-                            if foundAnt.player != me:  # if the ant is not me
-                                foundAnt.health = foundAnt.health - UNIT_STATS[ant.type][ATTACK]  # attack
-                                # If an enemy is attacked and loses all its health remove it from the other players
-                                # inventory
-                                if foundAnt.health <= 0:
-                                    pass
-                                    # myGameState.inventories[1 - me].ants.remove(foundAnt)
-                                # If attacked an ant already don't attack any more
-                                break
-        return myGameState
+    
