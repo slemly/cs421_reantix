@@ -76,7 +76,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "doomer")
+        super(AIPlayer,self).__init__(inputPlayerId, "gloomer")
         self.whoami = 0
     
     ##
@@ -157,7 +157,7 @@ class AIPlayer(Player):
         if rootNode.depth == DEPTHLIM:
             if rootNode.state.whoseTurn == self.whoami:
                 return [rootNode.value, rootNode.move]
-            else: return [-rootNode.value, rootNode.move]
+            #else: return [-rootNode.value, rootNode.move]
         if rootNode.state.whoseTurn == self.whoami: myTurn = True
         else: myTurn = False
         currState = rootNode.state
@@ -181,8 +181,6 @@ class AIPlayer(Player):
                     bestValue = childVal
                     bestMove = child.move
                     rootNode.alpha = bestValue
-                else:
-                    pass
                 if rootNode.alpha >= rootNode.beta:
                     break
             toReturn[1] = bestMove
@@ -198,8 +196,6 @@ class AIPlayer(Player):
                     bestValue = childVal
                     bestMove = child.move
                     rootNode.beta = bestValue
-                else:
-                    pass
                 if rootNode.alpha >= rootNode.beta:
                     break
             toReturn[1] = bestMove

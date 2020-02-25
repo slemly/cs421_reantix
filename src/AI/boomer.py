@@ -76,7 +76,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "doomer")
+        super(AIPlayer,self).__init__(inputPlayerId, "boomer")
         self.whoami = 0
     
     ##
@@ -332,8 +332,6 @@ class AIPlayer(Player):
             steps += 150
         if enemyQueen == None:
             steps -= 10000
-        if len(myWorkers) < 1:
-            steps += 150
         try:
             if type(myQueen) != None:
                 if myQueen.health == 0:
@@ -345,9 +343,12 @@ class AIPlayer(Player):
                         steps += 20
         except Exception as e:
             print(e)
-        for food in allFoods:
-            if myQueen.coords == food.coords:
-                steps += 20
+            pass
+        if len(myWorkers) < 1:
+            steps += 150
+        
+        
+        
         if len(myDrones) < 1:
             steps += 35
         elif len(myDrones) < 2:
