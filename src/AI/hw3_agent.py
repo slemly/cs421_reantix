@@ -11,9 +11,10 @@ from AIPlayerUtils import *
 import time
 
 HIGHCOST = 999999999999999 # arbitrary constant that will help us later
+DEPTHLIM = 3
 
 ## @Author Samuel Lemly
-## @Author Hera Malik
+## @Author Gabe Marcial
 
 ##
 #AIPlayer
@@ -34,7 +35,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "Sqanchy")
+        super(AIPlayer,self).__init__(inputPlayerId, "HW3Agent")
     
     ##
     #getPlacement
@@ -89,7 +90,8 @@ class AIPlayer(Player):
             return moves
         else:
             return [(0, 0)]
-    
+
+
     ##
     #getMove
     #Description: Gets the next move from the Player.
@@ -99,57 +101,75 @@ class AIPlayer(Player):
     #
     #Return: The Move to be made
     ##
-    
     #Redefined getMove() for HW2B
     def getMove(self, currentState):
         #define specified lists
         frontierNodes=[]
         expandedNodes=[]
-        currentStateEval = self.heuristicStepsToGoal(currentState) # evaluate current state with heuristic
-        currentStateRootNode = MoveNode(currentState,None,None,0,None,currentStateEval) # create node of current state
+        maxValue = self.evaluateMaxValue(currentState) # evaluate current state with heuristic
+        minimaxValue = 0
+        alpha = -(HIGHCOST)
+        beta = HIGHCOST
+        currentStateRootNode = MoveNode(currentState,None,None,0,None,maxValue, alpha, beta) # create node of current state
         frontierNodes.append(currentStateRootNode) # append current state node to list
 
         deepestNode = 0 # depth of deepest node for flow control purposes
+		
         
-        # setting the number inside the while() conditional ajusts how deep the agent searches
+        
+        #minimax algorithm
         while(deepestNode<3):
             nodeBestScore = HIGHCOST # arbitrary constant big int defined at top of file
             nodeBest = None
-            #iterate through noddes in frontiernode list, find one with best score
+            newFrontierNodes = []
             for node in frontierNodes:
-                if node.evalOfState < nodeBestScore:
-                    nodeBestScore = node.evalOfState
-                    nodeBest = node
-            # remove that node from the frontier, add it to the expanded nodes, then expand it
-            frontierNodes.remove(nodeBest)
-            expandedNodes.append(nodeBest)
-            expNodesFromBest = self.expandNode(nodeBest)
-            # add expanded node's children to the frontier
-            for expNode in expNodesFromBest:
-                frontierNodes.append(expNode)
-            deepestNode = nodeBest.depth + 1
+                stuff = self.expandNode(node)
+                for thing in stuff:
+                    newFrontierNodes.append(thing)
+                # newFrontierNodes.append(self.expandNode(node))
+                expandedNodes.append(node)
+                frontierNodes.remove(node)
+            for node in newFrontierNodes:
+                frontierNodes.append(node)
+            deepestNode += 1
+
+        parent_dict = {} 
+        for node in newFrontierNodes:
+            if node.parent not in parent_dict:
+                parent_dict[node.parent] = [node]
+            else:
+                parent_dict[node.parent].append(node)
+        firstOrderChildren = []
+        for parent in parent_dict: 
+            smallChildVal = HIGHCOST 
+            bestChild = None
+            for child in parent_dict[parent]:
+                if child.maxValue < smallChildVal:
+                    smallChildVal = child.maxValue
+                    bestChild = child
+            parent.maxValue = bestChild.maxValue
+            if parent.alpha > bestChild.maxValue:
+                parent.alpha = bestChild.maxValue
+            if parent.depth == 1:
+                firstOrderChildren.append(parent)
             
-        # tools to find lowest-costing node on frontier
-        lowestFrontierCost = HIGHCOST
-        lowestFrontierNode = None
-
-        # find the lowest-costing node on frontier, then select it
-        for node in frontierNodes:
-            if node.evalOfState < lowestFrontierCost:
-                lowestFrontierNode = node
-                lowestFrontierCost = node.evalOfState
-        currNode=lowestFrontierNode
-
-        # retrace selected node to find the parent node
-        examinedNodeDepth = currNode.depth
-        while(examinedNodeDepth > 1):
-            currNode = currNode.parent
-            examinedNodeDepth = currNode.depth
-            if currNode.depth == 1:
-                break
-        assert (currNode.depth == 1), "Not at proper depth!" # sanity check
-        return currNode.moveToMake # return the move of the selected node
-
+        #while bestChild.depth > 1:
+        #    bestChild = bestChild.parent
+        bestFirstChild = None
+        bestFirstChildval = HIGHCOST
+        print(len(firstOrderChildren))
+        for firstChild in firstOrderChildren:
+            if firstChild.maxValue < bestFirstChildval:
+                bestFirstChild = firstChild
+                bestFirstChildval = firstChild.maxValue
+        
+        assert bestFirstChild.depth == 1, "Not a first-level child of current state"
+        toReturn = bestFirstChild
+		
+        try:
+            return toReturn.moveToMake # return the move of the selected node
+        except Exception as ne:
+            print("Working as intended","\n\n***********************\n\n",ne)
 
 
         
@@ -168,10 +188,14 @@ class AIPlayer(Player):
         return enemyLocations[0]
 
     ##
-    # TODO: Complete this function.
-    # 
+    #evaluateMaxValue
+    #Description: heuristic analysis of a game state. This is a utility function.
+
+    #
+    #Parameters:
+    #   currentState - A clone of the current state (GameState)
     ##
-    def heuristicStepsToGoal(self, currentState):
+    def evaluateMaxValue(self, currentState):
         myState = currentState
         steps = 0
 
@@ -220,8 +244,6 @@ class AIPlayer(Player):
             steps -= 10000
         if len(myWorkers) < 1:
             steps += 150
-        if len(myWorkers) > 2:
-            steps += 150
         if myQueen.health == 0:
             steps += 999999999
         if myQueen.coords == myHill.coords:
@@ -236,66 +258,34 @@ class AIPlayer(Player):
         elif len(myDrones) > 4:
             steps += 20
         if len(mySoldiers) < 1:
-            steps += 40
+            steps += 25
         
         # iteration through worker array to 
-        # for worker in myWorkers:
-        #     distToTunnel = approxDist(worker.coords, myTunnel.coords)
-        #     distToHill = approxDist(worker.coords, myHill.coords) 
-        #     if worker.carrying: #worker has food; go to the hill
-        #         for food in allFoods: 
-        #             if worker.coords == food.coords:
-        #                 foodDist = min(distToTunnel, distToHill)
-        #                 break
-        #         if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
-        #             foodDist = 0 
-        #     else: # Otherwise, we want to move toward the food
-        #         # if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
-        #         #     foodDist = 0.2 #scalar for good food retrieval
-        #         closestFoodDist = 99999
-        #         bestFood = None
-        #         for food in allFoods:
-        #             distToCurrFood = approxDist(worker.coords, food.coords)
-        #             if worker.coords == food.coords:
-        #                 bestFood = food
-        #                 closestFoodDist = -0.01 #scalar for good food retrieval
-        #                 break
-        #             else:
-        #                 closestFoodDist = distToCurrFood
-        #                 bestFood = food
-        #         foodDist = closestFoodDist
-        #         if approxDist(myQueen.coords, bestFood.coords) <= approxDist(worker.coords, bestFood.coords):
-        #             steps += 75 
-        #         for food in allFoods: 
-        #             if worker.coords == food.coords:
-        #                 foodDist = min(distToTunnel, distToHill)
-        #                 break 
-        #             else: closestFoodDist = closestFoodDist + min(distToTunnel, distToHill)
-        #     steps += foodDist * (11-myInv.foodCount)
-
-        for worker in myWorkers:
-            distToGoal = HIGHCOST
-            distToTunnel = approxDist(worker.coords, myTunnel.coords)
-            distToHill = approxDist(worker.coords, myHill.coords)
-
-            if worker.carrying:
-                distToGoal = min(distToTunnel,distToHill) + 1
-                if worker.coords == myTunnel.coords or worker.coords == myHill.coords:
-                    distToGoal = 0
-            else:
-                closestFoodDistance = HIGHCOST
+        for worker in myWorkers: 
+            if worker.carrying: #worker has food; go to the hill
+                distToTunnel = approxDist(worker.coords, myTunnel.coords)
+                distToHill = approxDist(worker.coords, myHill.coords)
+                foodDist = min(distToTunnel, distToHill) - 0.2
+                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+                    foodDist = 0.2 #scalar for good food retrieval
+            else: # Otherwise, we want to move toward the food
+                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+                    foodDist = 0.2 #scalar for good food retrieval
+                closestFoodDist = 99999
+                bestFood = None
                 for food in allFoods:
-                    distCurrFood = approxDist(worker.coords, food.coords)
+                    distToCurrFood = approxDist(worker.coords, food.coords)
                     if worker.coords == food.coords:
-                        distToGoal = distToTunnel
-                    else:
-                        if distCurrFood <= closestFoodDistance:
-                            closestFoodDistance = distCurrFood      
-                        distFoodToHill = approxDist(food.coords, myHill.coords)
-                        distFoodToTunnel = approxDist(food.coords, myTunnel.coords)
-                        distToGoal = min(distFoodToTunnel, distFoodToHill) + closestFoodDistance
-                # distToGoal = closestFoodDistance
-            steps += distToGoal + 10*(11-myFoodCount)
+                        bestFood = food
+                        closestFoodDist = 0.01 #scalar for good food retrieval
+                        break
+                    if distToCurrFood <= closestFoodDist:
+                        closestFoodDist = distToCurrFood
+                        bestFood = food
+                foodDist = closestFoodDist
+                if approxDist(myQueen.coords, bestFood.coords) <= approxDist(worker.coords, bestFood.coords):
+                    steps += 75  
+            steps += foodDist * (11 - myInv.foodCount)
 
         #aiming for a win through offense
         attackDist = 999999
@@ -306,6 +296,7 @@ class AIPlayer(Player):
             else:
                 attackDist = approxDist(drone.coords, enemyHill.coords)
             steps += attackDist
+                
 
         # # Target enemy workers with soldiers, then move to the anthill
         for soldier in mySoldiers:
@@ -325,7 +316,8 @@ class AIPlayer(Player):
         for ant in myAnts:
             if ant.coords == enemyHill.coords:
                 steps -= 100000
-
+        if len(myWorkers) >= 2:
+            steps -= 1000
         return steps 
 
 
@@ -357,21 +349,26 @@ class AIPlayer(Player):
         currentState = moveNode.currState
         moves = listAllLegalMoves(currentState)
         nodesToReturn = []
+        alpha = 0
+        beta = HIGHCOST
         for move in moves:
-            # nextState = self.getNextState(currentState, move)
-            nextState = getNextState(currentState, move)
-            eval = self.heuristicStepsToGoal(nextState)
-            nodeAppend=MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, eval)
+            nextState = getNextStateAdversarial(currentState, move)
+            maxVal = self.evaluateMaxValue(nextState)
+            nodeAppend = MoveNode(currentState,move,nextState,(moveNode.depth+1), moveNode, maxVal, alpha, beta)
+            myAnts = getCurrPlayerInventory(nextState).ants
+            workers = [ant for ant in myAnts if ant.type == WORKER]
+            rangedSoldiers = [ant for ant in myAnts if ant.type == R_SOLDIER]
+            soldiers = [ant for ant in myAnts if ant.type == SOLDIER]
+            # if len(workers) <= 2 and len(rangedSoldiers) <= 0 and len(soldiers) <=2:    
             nodesToReturn.append(nodeAppend)
         return nodesToReturn
-
 
 
     # This is a redefinition of the getNextState from AIPlayerUtils
     # This one has the carrying toggle commented out so it does not trigger when the ant is next to food. 
     # This was a common bug many groups experienced when working on their agents.
 
-    def getNextState(self,currentState, move):
+    def getNextState2(self,currentState, move):
         # variables I will need
         myGameState = currentState.fastclone()
         myInv = getCurrPlayerInventory(myGameState)
@@ -448,13 +445,17 @@ class AIPlayer(Player):
 #       parent - node object, reference to the parent node
 #       evalOfState - float/int/some number resulting from heuristic examination of the nextState 
 class MoveNode():
-    def __init__(self, currState, moveToMake, nextState, depth, parent, evalOfState):
+    def __init__(self, currState, moveToMake, nextState, depth, parent, minimax, alp, bet):
         self.moveToMake = moveToMake
         self.currState = currState
         self.nextState = nextState
         self.depth = depth
         self.parent = parent
-        self.evalOfState = evalOfState
+        self.maxValue = minimax #aka minimax value.
+        self.alpha = alp
+        self.beta = bet
+
+
     
     
 
@@ -485,7 +486,7 @@ def getGameState():
     return state
 
 # make a simple game state to test scores
-def heuristicStepsToGoalTest():
+def evaluateMaxValueTest():
     # get game state
     state = getGameState()
     myAnt = Ant((0, 6), WORKER, 0)
@@ -494,7 +495,7 @@ def heuristicStepsToGoalTest():
     state.inventories[1 - state.whoseTurn].ants.append(enemyAnt)
     #making sure our heuristic score is a reasonable number
     score = 100
-    testScore = heuristicStepsToGoal(state)
+    testScore = evaluateMaxValue(state)
     if (score > testScore):
         print("Heuristic is too high")
     if (testScore == 0):
@@ -531,6 +532,6 @@ def bestMoveTest():
 if __name__ == "__main__":
     getMoveTest()
     bestMoveTest()
-    heuristicStepsToGoalTest()
+    # heuristicStepsToGoalTest()
 
 
