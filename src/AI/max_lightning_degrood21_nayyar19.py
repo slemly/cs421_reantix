@@ -8,6 +8,7 @@ from Player import *
 import random
 import sys
 import math
+import os
 sys.path.append("..") 
 
 MAX_DEPTH = 3
@@ -23,6 +24,8 @@ ARBIT_LARGE = 10**6
 ##
 class AIPlayer(Player):
 
+
+    
     #__init__
     #Description: Creates a new Player
     #
@@ -32,6 +35,35 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId):
         super(AIPlayer, self).__init__(inputPlayerId, "Max_Lightning")
+        self.gene_pool = [[]]
+        self.curr_gene = 0
+        self.fitness_list = []
+
+    def init_pop():
+      curr_dir = os.getcwd()
+      if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
+        self.gene_pool = self.init_random_genes()
+        self.fitness_list = []
+        self.curr_gene = 0
+
+
+    def create_gene():
+      to_return = []
+      for i in range(0,12):
+        to_return.append(random.uniform(-10,10))
+      return to_return
+
+    def init_random_genes():
+      to_return = []
+      num_to_make = 10
+      made_count = 0 
+      while made_count < num_to_make:
+        to_return.append(self.create_gene())
+        made_count+=1
+      return to_return 
+
+
+
 
     ##
     #getPlacement
@@ -416,3 +448,5 @@ class Node:
     self.depth = depth
     self.steps = steps + self.depth
     self.parent = parent
+
+
