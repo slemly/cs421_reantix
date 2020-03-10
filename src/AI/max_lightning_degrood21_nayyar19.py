@@ -46,7 +46,6 @@ class AIPlayer(Player):
         self.fitness_list = []
         self.curr_gene = 0
 
-
     def create_gene():
       to_return = []
       for i in range(0,12):
@@ -55,12 +54,46 @@ class AIPlayer(Player):
 
     def init_random_genes():
       to_return = []
-      num_to_make = 10
+      num_to_make = 12
       made_count = 0 
       while made_count < num_to_make:
         to_return.append(self.create_gene())
         made_count+=1
       return to_return 
+
+    def splice_genes(gene_1, gene_2):
+      assert(len(gene_1) == len(gene_2), "Lengths of spliced genes not equal")
+      rand_cut_ind_1 = random.randint(0,len(gene_1))
+      # rand_cut_ind_2 = random.randint(0,len(gene_2))
+      child1 = gene_2[:rand_cut_ind_1] + gene_1[rand_cut_ind_1:]
+      child2 = gene_1[:rand_cut_ind_1] + gene_2[rand_cut_ind_1:]
+
+      child1_mutation_odds = random.randint(0,100)
+      child2_mutation_odds = random.randint(0,100)
+
+      if child1_mutation_odds < 25:
+        mutate_idx_1 = random.randint(0,len(child1))
+        child1[mutate_idx_1] = random.uniform(-10,10)
+
+      if child2_mutation_odds < 25:
+        mutate_idx_2 = random.randint(0,len(child2))
+        child2[mutate_idx_2] = random.uniform(-10,10)
+
+      return (child1, child2)
+
+
+
+      def create_nextgen(currGen):
+        for gene in currGen:
+          self.fitness_list.append((assess_fitness(gene), gene))
+        sorted_fit_list = sorted(self.fitness_list, key=lambda tuple: tup[0])
+        best_parents = sorted_fit_list[0:4]
+        
+        
+
+
+      #TODO
+      def assess_fitness(gene):
 
 
 
