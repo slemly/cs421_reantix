@@ -39,20 +39,20 @@ class AIPlayer(Player):
         self.curr_gene = 0
         self.fitness_list = []
 
-    def init_pop():
+    def init_pop(self):
       curr_dir = os.getcwd()
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
         self.fitness_list = []
         self.curr_gene = 0
 
-    def create_gene():
+    def create_gene(self):
       to_return = []
       for i in range(0,12):
         to_return.append(random.uniform(-10,10))
       return to_return
 
-    def init_random_genes():
+    def init_random_genes(self):
       to_return = []
       num_to_make = 12
       made_count = 0 
@@ -61,7 +61,7 @@ class AIPlayer(Player):
         made_count+=1
       return to_return 
 
-    def splice_genes(gene_1, gene_2):
+    def splice_genes(self, gene_1, gene_2):
       assert(len(gene_1) == len(gene_2), "Lengths of spliced genes not equal")
       rand_cut_ind_1 = random.randint(0,len(gene_1))
       # rand_cut_ind_2 = random.randint(0,len(gene_2))
@@ -81,19 +81,28 @@ class AIPlayer(Player):
 
       return (child1, child2)
 
+    def create_nextgen(self, currGen):
+      nextGen = []
+      for gene in currGen:
+        self.fitness_list.append((assess_fitness(gene), gene))
+      sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0])
+      best_parents = sorted_fit_list[0:4]
+      for i in range(0,len(best_parents)):
+        curr_par = best_parents[i]
+        for k in range(i+1, len(best_parents)):
+          children = splice_genes(curr_par, best_parents[k])
+          nextGen.append(children[0])
+          nextGen.append(children[1])
+      return nextGen
 
-
-      def create_nextgen(currGen):
-        for gene in currGen:
-          self.fitness_list.append((assess_fitness(gene), gene))
-        sorted_fit_list = sorted(self.fitness_list, key=lambda tuple: tup[0])
-        best_parents = sorted_fit_list[0:4]
+        
         
         
 
 
       #TODO
       def assess_fitness(gene):
+        pass
 
 
 
