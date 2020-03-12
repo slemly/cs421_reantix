@@ -9,6 +9,7 @@ import random
 import sys
 import math
 import os
+import unittest
 sys.path.append("..") 
 
 MAX_DEPTH = 3
@@ -22,10 +23,7 @@ ARBIT_LARGE = 10**6
 #Variables:
 #   playerId - The id of the player.
 ##
-class AIPlayer(Player):
-
-
-    
+class AIPlayer(Player):    
     #__init__
     #Description: Creates a new Player
     #
@@ -45,9 +43,14 @@ class AIPlayer(Player):
       #TODO need to read from population file and set gene_pool if file exists
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
+      else:
+        to_open = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"), "r")
+        file_content = to_open.readlines()
+        for line in file_content:
+          self.gene_pool.append(line)
         #TODO move these two outside of if? Should happen regardless of file existing
-        self.fitness_list = []
-        self.curr_gene = 0
+        # self.fitness_list = []
+        # self.curr_gene = 0
 
     def create_gene(self):
       to_return = []
@@ -575,3 +578,19 @@ class Node:
     self.parent = parent
 
 
+
+
+
+class genetic_Alg_Unit_Tests(unittest.TestCase):
+  def test_learningUtility(self):
+    pass
+  def test_create_next_gen(self):
+    pass
+  def test_create_gene(self):
+    pass
+  def test_splice_genes(self):
+    pass
+  def test_init_pop(self):
+    pass
+  def test_init_random_genes(self):
+    pass
