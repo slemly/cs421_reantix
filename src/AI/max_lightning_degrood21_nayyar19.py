@@ -38,6 +38,7 @@ class AIPlayer(Player):
         self.gene_pool = [[]] #population
         self.curr_gene = 0 #next to be evaluated gene index
         self.fitness_list = [] #fitness of each gene of curr population
+        self.fitness = 0
 
     def init_pop(self):
       curr_dir = os.getcwd()
@@ -85,10 +86,10 @@ class AIPlayer(Player):
 
     def create_nextgen(self, currGen):
       nextGen = []
-      #! Do we need this for loop? registerWin is already updating fitness so we just need to sort
-      #! when creating a new generation?
-      for gene in currGen:
-        self.fitness_list.append((self.assess_fitness(gene), gene))
+      #? Do we need this for loop? registerWin is already updating fitness so we just need to sort
+      #? when creating a new generation? Commented out for now
+      # for gene in currGen:
+      #   self.fitness_list.append((self.assess_fitness(gene), gene))
       sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0])
       best_parents = sorted_fit_list[0:4]
       for i in range(0,len(best_parents)):
@@ -180,6 +181,10 @@ class AIPlayer(Player):
       if myQueen != None and enemyQueen != None:
         dist = approxDist(myQueen.coords, enemyQueen.coords)
       returnSum += gene[11]*(dist)
+
+      #set a fitness everytime utility it called so we have it to determine fitness
+      #if we won or lost
+      self.fitness = returnSum
 
       return returnSum
 
