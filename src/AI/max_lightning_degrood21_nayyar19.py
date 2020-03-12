@@ -35,14 +35,16 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId):
         super(AIPlayer, self).__init__(inputPlayerId, "Max_Lightning")
-        self.gene_pool = [[]]
-        self.curr_gene = 0
-        self.fitness_list = []
+        self.gene_pool = [[]] #population
+        self.curr_gene = 0 #next to be evaluated gene index
+        self.fitness_list = [] #fitness of each gene of curr population
 
     def init_pop(self):
       curr_dir = os.getcwd()
+      #TODO need to read from population file and set gene_pool if file exists
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
+        #TODO move these two outside of if? Should happen regardless of file existing
         self.fitness_list = []
         self.curr_gene = 0
 
@@ -83,8 +85,10 @@ class AIPlayer(Player):
 
     def create_nextgen(self, currGen):
       nextGen = []
+      #! Do we need this for loop? registerWin is already updating fitness so we just need to sort
+      #! when creating a new generation?
       for gene in currGen:
-        self.fitness_list.append((assess_fitness(gene), gene))
+        self.fitness_list.append((self.assess_fitness(gene), gene))
       sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0])
       best_parents = sorted_fit_list[0:4]
       for i in range(0,len(best_parents)):
@@ -94,17 +98,90 @@ class AIPlayer(Player):
           nextGen.append(children[0])
           nextGen.append(children[1])
       return nextGen
-
         
-        
-        
+    #TODO Now I need to figure out if the old heuristic gets replaced with this to calculate steps
+    def learningUtility (self, gene, currentState):
+      myState = currentState.fastclone()
+      me = myState.whoseTurn
+      enemy = abs(me - 1)
+      myInv = getCurrPlayerInventory(myState)
+      enemyInv = getEnemyInv(self, myState)
+      myFood = myInv.foodCount
+      enemyFood = enemyInv.foodCount
+      enemyQueen = enemyInv.getQueen()
+      myQueen = myInv.getQueen()
+      myWorkers = getAntList(myState, me, (WORKER,))
+      myOffense = getAntList(myState, me, (SOLDIER,))
+      enemyWorkers = getAntList(myState, enemy, (WORKER,))
+      enemyOffense = getAntList(myState, enemy, (SOLDIER,))
+      hills = getConstrList(myState, types=(ANTHILL,))
+      myHill = hills[1] if (hills[0].coords[1] > 5) else hills[0]
+      enemyHill = hills[1] if (myHill is hills[0]) else hills[0]
+      
+      returnSum = 0
 
+      returnSum += gene[0]*(myFood - enemyFood)
+      if myQueen != None and enemyQueen != None:
+        returnSum += gene[1]*(myQueen.health - enemyQueen.health)
+      returnSum += gene[2]*(len(myOffense)-len(enemyOffense))
+      returnSum += gene[3]*(len(myWorkers)-len(enemyWorkers))
+      returnSum += gene[4]*(1 if len(myOffense)-len(enemyOffense) > 0 else 0)
 
-      #TODO
-      def assess_fitness(gene):
-        pass
+      avgDist = 0
+      if len(myOffense) > 0 and enemyQueen != None:
+        for soldier in myOffense:
+          avgDist += approxDist(enemyQueen.coords, soldier.coords)
+        avgDist = avgDist/len(myOffense)
+      returnSum += gene[5]*(avgDist)
 
+      avgDist = 0
+      if len(enemyOffense) > 0 and myQueen != None:
+        for soldier in enemyOffense:
+          avgDist += approxDist(myQueen.coords, soldier.coords)
+        avgDist = avgDist/len(enemyOffense)
+      returnSum += gene[6]*(avgDist)
 
+      avgDist = 0
+      if len(myOffense) > 0:
+        for soldier in myOffense:
+          avgDist += approxDist(enemyHill.coords, soldier.coords)
+        avgDist = avgDist/len(myOffense)
+      returnSum += gene[7]*(avgDist)
+
+      avgDist = 0
+      if len(enemyOffense) > 0:
+        for soldier in enemyOffense:
+          avgDist += approxDist(myHill.coords, soldier.coords)
+        avgDist = avgDist/len(enemyOffense)
+      returnSum += gene[8]*(avgDist)
+
+      indexOfClosest = 0
+      if len(enemyOffense) > 0:
+        count = 0
+        for off in enemyOffense:
+          if approxDist(off.coords,myQueen.coords) <= approxDist(enemyOffense[indexOfClosest],myQueen.coords):
+            indexOfClosest = count
+          count += 1
+      avgDist = 0
+      if len(enemyOffense) > 0 and len(myOffense) > 0:
+        for soldier in myOffense:
+          avgDist += approxDist(soldier.coords, enemyOffense[indexOfClosest].coords)
+        avgDist = avgDist/len(myOffense) 
+      returnSum += gene[9]*(avgDist)
+
+      avgDist = 0
+      if len(myWorkers) > 0 and myQueen != None:
+        for w in myWorkers:
+          avgDist += approxDist(myQueen.coords, w.coords)
+        avgDist = avgDist/len(myWorkers)
+      returnSum += gene[10]*(avgDist)
+
+      dist = 0
+      if myQueen != None and enemyQueen != None:
+        dist = approxDist(myQueen.coords, enemyQueen.coords)
+      returnSum += gene[11]*(dist)
+
+      return returnSum
 
 
     ##
@@ -235,7 +312,8 @@ class AIPlayer(Player):
     #registerWin
     #
     # This agent doens't learn
-    #
+    # 
+    #TODO need to implement this
     def registerWin(self, hasWon):
         #method templaste, not implemented
         pass
