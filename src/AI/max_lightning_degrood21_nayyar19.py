@@ -68,7 +68,7 @@ class AIPlayer(Player):
       return to_return 
 
     def splice_genes(self, gene_1, gene_2):
-      assert(len(gene_1) == len(gene_2), "Lengths of spliced genes not equal")
+      assert len(gene_1) == len(gene_2), "Lengths of spliced genes not equal"
       rand_cut_ind_1 = random.randint(0,len(gene_1))
       # rand_cut_ind_2 = random.randint(0,len(gene_2))
       child1 = gene_2[:rand_cut_ind_1] + gene_1[rand_cut_ind_1:]
@@ -78,11 +78,11 @@ class AIPlayer(Player):
       child2_mutation_odds = random.randint(0,100)
 
       if child1_mutation_odds < 25:
-        mutate_idx_1 = random.randint(0,len(child1))
+        mutate_idx_1 = random.randint(0,len(child1)-1)
         child1[mutate_idx_1] = random.uniform(-10,10)
 
       if child2_mutation_odds < 25:
-        mutate_idx_2 = random.randint(0,len(child2))
+        mutate_idx_2 = random.randint(0,len(child2)-1)
         child2[mutate_idx_2] = random.uniform(-10,10)
 
       return (child1, child2)
@@ -580,17 +580,50 @@ class Node:
 
 
 
+# testing done below this point
 
-class genetic_Alg_Unit_Tests(unittest.TestCase):
-  def test_learningUtility(self):
-    pass
-  def test_create_next_gen(self):
-    pass
-  def test_create_gene(self):
-    pass
-  def test_splice_genes(self):
-    pass
-  def test_init_pop(self):
-    pass
-  def test_init_random_genes(self):
-    pass
+def test_splice_genes():
+  print("TEST RUNNING")
+  agent = AIPlayer(-1)
+  gene1 = [1,2,3,4,5,6,7,8,9]
+  gene2 = [9,8,7,6,5,4,3,2,1]
+  agent.gene_pool.append(gene1)
+  agent.gene_pool.append(gene2)
+  print(agent.gene_pool)
+  children = agent.splice_genes(agent.gene_pool[0], agent.gene_pool[1])
+  print(children)
+  assert children[0][9] == 1, "Something went wrong"
+  assert children[1][9] == 9, "Something went wrong part 2"
+
+test_splice_genes()
+
+
+
+
+
+
+
+# class Genetic_Alg_Unit_Tests(unittest.TestCase):
+
+#   def test_learningUtility(self):
+#     pass
+#   def test_create_next_gen(self):
+#     pass
+#   def test_create_gene(self):
+#     pass
+#   def test_splice_genes(self):
+#     print("TEST RUNNING")
+#     agent = AIPlayer(-1)
+#     gene1 = [1,2,3,4,5,6,7,8,9]
+#     gene2 = [9,8,7,6,5,4,3,2,1]
+#     agent.gene_pool.append(gene1)
+#     agent.gene_pool.append(gene2)
+#     children = agent.splice_genes(gene1, gene2)
+#     print(children)
+#     print("TEST RUNNING")
+#     self.assertEqual(children[0][8],1)
+#   def test_init_pop(self):
+#     pass
+#   def test_init_random_genes(self):
+#     pass
+# unittest.main()
