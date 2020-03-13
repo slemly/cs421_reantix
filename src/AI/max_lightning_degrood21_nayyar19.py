@@ -33,24 +33,27 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId):
         super(AIPlayer, self).__init__(inputPlayerId, "Max_Lightning")
-        self.gene_pool = [[]] #population
+        self.gene_pool = [] #population
         self.curr_gene = 0 #next to be evaluated gene index
         self.fitness_list = [] #fitness of each gene of curr population
         self.fitness = 0
+        self.finalFit = 0
+        self.gamesPlayed = 0
+        self.init_pop()
 
     def init_pop(self):
       curr_dir = os.getcwd()
-      #TODO need to read from population file and set gene_pool if file exists
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
+        #TODO need to export this generated pop to the file
       else:
         to_open = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"), "r")
         file_content = to_open.readlines()
         for line in file_content:
           self.gene_pool.append(line)
-        #TODO move these two outside of if? Should happen regardless of file existing
-        # self.fitness_list = []
-        # self.curr_gene = 0
+      
+      self.fitness_list = []
+      self.curr_gene = 0
 
     def create_gene(self):
       to_return = []
@@ -87,23 +90,19 @@ class AIPlayer(Player):
 
       return (child1, child2)
 
-    def create_nextgen(self, currGen):
+    def create_nextgen(self):
       nextGen = []
-      #? Do we need this for loop? registerWin is already updating fitness so we just need to sort
-      #? when creating a new generation? Commented out for now
-      # for gene in currGen:
-      #   self.fitness_list.append((self.assess_fitness(gene), gene))
       sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0])
       best_parents = sorted_fit_list[0:4]
       for i in range(0,len(best_parents)):
-        curr_par = best_parents[i]
+        curr_par = best_parents[i][1]
         for k in range(i+1, len(best_parents)):
-          children = splice_genes(curr_par, best_parents[k])
+          children = self.splice_genes(curr_par, best_parents[k][1])
           nextGen.append(children[0])
           nextGen.append(children[1])
+      print("NEXT GEN: ", nextGen[0])
       return nextGen
         
-    #TODO Now I need to figure out if the old heuristic gets replaced with this to calculate steps
     def learningUtility (self, gene, currentState):
       myState = currentState.fastclone()
       me = myState.whoseTurn
@@ -295,7 +294,9 @@ class AIPlayer(Player):
       nodes = []
       for move in moves:
         nextState = getNextStateAdversarial(node.state, move)
-        steps = self.heuristicStepsToGoal(nextState, move)
+        print("CURR GENE IN expandNode: \n", self.curr_gene)
+        print("GENE_POOl IN expandNode: \n", self.gene_pool[0])
+        steps = self.learningUtility(self.gene_pool[self.curr_gene],nextState)
         #sprint(steps)
         newDepth = node.depth + 1
         newNode = Node(move, nextState, newDepth, steps, node)
@@ -323,8 +324,28 @@ class AIPlayer(Player):
     # 
     #TODO need to implement this
     def registerWin(self, hasWon):
-        #method templaste, not implemented
-        pass
+      print("GENE: \n", self.gene_pool[self.curr_gene])
+      print("CURR GENE: \n", self.curr_gene)
+      if hasWon:
+        self.finalFit += self.fitness
+      else:
+        self.finalFit += -self.fitness
+      
+      if self.gamesPlayed == 1:
+        self.fitness_list.append((self.fitness,self.gene_pool[self.curr_gene]))
+        self.curr_gene += 1
+        self.gamesPlayed = 0
+      
+      print("CURR GENE PART 2: \n", self.curr_gene)
+      print("Lengt of Pop: \n", len(self.gene_pool))
+      if self.curr_gene == len(self.gene_pool):
+        self.gene_pool = self.create_nextgen()
+        self.curr_gene = 0
+      
+      self.gamesPlayed += 1
+
+      
+
 
     ##
     # sortAttr
