@@ -72,7 +72,7 @@ class AIPlayer(Player):
 
     def splice_genes(self, gene_1, gene_2):
       assert len(gene_1) == len(gene_2), "Lengths of spliced genes not equal"
-      rand_cut_ind_1 = random.randint(0,len(gene_1))
+      rand_cut_ind_1 = random.randint(0,len(gene_1)-1)
       # rand_cut_ind_2 = random.randint(0,len(gene_2))
       child1 = gene_2[:rand_cut_ind_1] + gene_1[rand_cut_ind_1:]
       child2 = gene_1[:rand_cut_ind_1] + gene_2[rand_cut_ind_1:]
@@ -604,20 +604,41 @@ class Node:
 # testing done below this point
 
 def test_splice_genes():
-  print("TEST RUNNING")
   agent = AIPlayer(-1)
-  gene1 = [1,2,3,4,5,6,7,8,9]
-  gene2 = [9,8,7,6,5,4,3,2,1]
-  agent.gene_pool.append(gene1)
-  agent.gene_pool.append(gene2)
-  print(agent.gene_pool)
+  gene0 = agent.gene_pool[0]
+  gene1 = agent.gene_pool[1]
   children = agent.splice_genes(agent.gene_pool[0], agent.gene_pool[1])
-  print(children)
-  assert children[0][9] == 1, "Something went wrong"
-  assert children[1][9] == 9, "Something went wrong part 2"
+  child0 = children[0]
+  child1 = children[1]
+  tally_found = 0
+  for scalar in child0:
+    if scalar not in gene0 and scalar not in gene1:
+      print("Mutant scalar located in child 0")
+    else: 
+      assert scalar in gene0 or gene1
+    assert scalar <=10 and scalar >= -10
+    tally_found += 1
+  assert tally_found == 12, "Not all genes accounted for"
+  
+  tally_found = 0
+  for scalar in child1: 
 
+    if scalar not in gene0 and scalar not in gene1:
+      print("Mutant scalar located in child 1")
+    else: 
+      assert scalar in gene1 or gene0
+    assert scalar <=10 and scalar >= -10
+    tally_found +=1
+  assert tally_found == 12, "Not all genes accounted for"
 test_splice_genes()
 
+def test_create_gene():
+  agent=AIPlayer(-1)
+  testGene = AIPlayer.create_gene()
+  for value in testGene:
+    assert value <=10 and value >=-10
+  assert len(testGene) == 12
+test_create_gene()
 
 
 
@@ -632,17 +653,6 @@ test_splice_genes()
 #     pass
 #   def test_create_gene(self):
 #     pass
-#   def test_splice_genes(self):
-#     print("TEST RUNNING")
-#     agent = AIPlayer(-1)
-#     gene1 = [1,2,3,4,5,6,7,8,9]
-#     gene2 = [9,8,7,6,5,4,3,2,1]
-#     agent.gene_pool.append(gene1)
-#     agent.gene_pool.append(gene2)
-#     children = agent.splice_genes(gene1, gene2)
-#     print(children)
-#     print("TEST RUNNING")
-#     self.assertEqual(children[0][8],1)
 #   def test_init_pop(self):
 #     pass
 #   def test_init_random_genes(self):
