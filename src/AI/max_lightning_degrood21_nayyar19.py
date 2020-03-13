@@ -632,13 +632,13 @@ def test_splice_genes():
   assert tally_found == 12, "Not all genes accounted for"
 test_splice_genes()
 
-def test_create_gene():
-  agent=AIPlayer(-1)
-  testGene = AIPlayer.create_gene()
-  for value in testGene:
-    assert value <=10 and value >=-10
-  assert len(testGene) == 12
-test_create_gene()
+# def test_create_gene():
+#   agent=AIPlayer(-1)
+#   testGene = AIPlayer.create_gene()
+#   for value in testGene:
+#     assert value <=10 and value >=-10
+#   assert len(testGene) == 12
+# test_create_gene()
 
 
 
