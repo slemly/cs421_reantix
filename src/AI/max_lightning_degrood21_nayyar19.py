@@ -162,7 +162,7 @@ class AIPlayer(Player):
       if len(enemyOffense) > 0:
         count = 0
         for off in enemyOffense:
-          if approxDist(off.coords,myQueen.coords) <= approxDist(enemyOffense[indexOfClosest],myQueen.coords):
+          if approxDist(off.coords,myQueen.coords) <= approxDist(enemyOffense[indexOfClosest].coords,myQueen.coords):
             indexOfClosest = count
           count += 1
       avgDist = 0
@@ -188,7 +188,7 @@ class AIPlayer(Player):
       #if we won or lost
       self.fitness = returnSum
 
-      return returnSum
+      return ARBIT_LARGE - returnSum
 
 
     ##
