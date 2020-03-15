@@ -114,6 +114,8 @@ class AIPlayer(Player):
           children = self.splice_genes(curr_par, best_parents[k][1])
           nextGen.append(children[0])
           nextGen.append(children[1])
+      if os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
+        os.remove(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"))
       to_write = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"),"x")
       for gene in nextGen:
         for item in gene:
