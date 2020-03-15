@@ -59,7 +59,12 @@ class AIPlayer(Player):
         file_content = to_open.readlines()
         for line in file_content:
           # self.gene_pool.append(line)
-          self.gene_pool = [float(s) for s in line.split(' ')]
+          # self.gene_pool = [float(s) for s in line.split(' ')]
+          to_append = []
+          splitLine = line.split(' ')
+          for i in range(len(splitLine)-1):
+            to_append.append(float(splitLine[i]))
+          self.gene_pool.append(to_append)
       
       self.fitness_list = []
       self.curr_gene = 0
