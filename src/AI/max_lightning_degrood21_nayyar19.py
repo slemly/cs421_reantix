@@ -104,6 +104,7 @@ class AIPlayer(Player):
       return (child1, child2)
 
     def create_nextgen(self):
+      curr_dir = os.getcwd()
       nextGen = []
       sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0])
       best_parents = sorted_fit_list[0:4]
@@ -113,6 +114,12 @@ class AIPlayer(Player):
           children = self.splice_genes(curr_par, best_parents[k][1])
           nextGen.append(children[0])
           nextGen.append(children[1])
+      to_write = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"),"x")
+      for gene in nextGen:
+        for item in gene:
+          to_write.write(str(str(item) + " "))
+        to_write.write("\n")
+      to_write.close()
       print("NEXT GEN: ", nextGen[0])
       return nextGen
         
