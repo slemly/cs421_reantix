@@ -45,12 +45,19 @@ class AIPlayer(Player):
       curr_dir = os.getcwd()
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
-        #TODO need to export this generated pop to the file
+        to_write = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"),"x")
+        for gene in self.gene_pool:
+          for item in self.gene_pool:
+            to_write.write((item, " "))
+          to_write.write("\n")
+        to_write.close()
+        # TODO need to export this generated pop to the file
       else:
         to_open = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"), "r")
         file_content = to_open.readlines()
         for line in file_content:
-          self.gene_pool.append(line)
+          # self.gene_pool.append(line)
+          self.gene_pool = map(float, line.split(' '))
       
       self.fitness_list = []
       self.curr_gene = 0
@@ -72,10 +79,9 @@ class AIPlayer(Player):
 
     def splice_genes(self, gene_1, gene_2):
       assert len(gene_1) == len(gene_2), "Lengths of spliced genes not equal"
-      rand_cut_ind_1 = random.randint(0,len(gene_1)-1)
-      # rand_cut_ind_2 = random.randint(0,len(gene_2))
-      child1 = gene_2[:rand_cut_ind_1] + gene_1[rand_cut_ind_1:]
-      child2 = gene_1[:rand_cut_ind_1] + gene_2[rand_cut_ind_1:]
+      rand_cut_ind = random.randint(0,len(gene_1)-1)
+      child1 = gene_2[:rand_cut_ind] + gene_1[rand_cut_ind:]
+      child2 = gene_1[:rand_cut_ind] + gene_2[rand_cut_ind:]
 
       child1_mutation_odds = random.randint(0,100)
       child2_mutation_odds = random.randint(0,100)
