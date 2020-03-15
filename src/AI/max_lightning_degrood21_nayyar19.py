@@ -51,7 +51,6 @@ class AIPlayer(Player):
             to_write.write((item, " "))
           to_write.write("\n")
         to_write.close()
-        # TODO need to export this generated pop to the file
       else:
         to_open = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"), "r")
         file_content = to_open.readlines()
@@ -328,7 +327,6 @@ class AIPlayer(Player):
     #
     # This agent doens't learn
     # 
-    #TODO need to implement this
     def registerWin(self, hasWon):
       print("GENE: \n", self.gene_pool[self.curr_gene])
       print("CURR GENE: \n", self.curr_gene)
