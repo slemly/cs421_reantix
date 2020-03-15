@@ -14,6 +14,8 @@ sys.path.append("..")
 
 MAX_DEPTH = 3
 ARBIT_LARGE = 10**6
+
+game_ticker = 0
 ##
 #AIPlayer
 #Description: The responsbility of this class is to interact with the game by
@@ -45,10 +47,11 @@ class AIPlayer(Player):
       curr_dir = os.getcwd()
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
+        print(self.gene_pool)
         to_write = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"),"x")
         for gene in self.gene_pool:
-          for item in self.gene_pool:
-            to_write.write((item, " "))
+          for item in gene:
+            to_write.write(str(str(item) + " "))
           to_write.write("\n")
         to_write.close()
       else:
@@ -634,7 +637,9 @@ def test_splice_genes():
     assert scalar <=10 and scalar >= -10
     tally_found +=1
   assert tally_found == 12, "Not all genes accounted for"
-test_splice_genes()
+
+if len(sys.argv) == 2 and sys.argv[1] == "test":
+  test_splice_genes()
 
 # def test_create_gene():
 #   agent=AIPlayer(-1)
