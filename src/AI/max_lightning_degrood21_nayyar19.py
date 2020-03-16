@@ -106,7 +106,7 @@ class AIPlayer(Player):
     def create_nextgen(self):
       curr_dir = os.getcwd()
       nextGen = []
-      sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0])
+      sorted_fit_list = sorted(self.fitness_list, key=lambda tup: tup[0], reverse = True)
       best_parents = sorted_fit_list[0:4]
       for i in range(0,len(best_parents)):
         curr_par = best_parents[i][1]
@@ -206,11 +206,7 @@ class AIPlayer(Player):
         dist = approxDist(myQueen.coords, enemyQueen.coords)
       returnSum += gene[11]*(dist)
 
-      #set a fitness everytime utility it called so we have it to determine fitness
-      #if we won or lost
-      self.fitness = returnSum
-
-      return ARBIT_LARGE - returnSum
+      return returnSum
 
 
     ##
@@ -316,8 +312,8 @@ class AIPlayer(Player):
       nodes = []
       for move in moves:
         nextState = getNextStateAdversarial(node.state, move)
-        print("CURR GENE IN expandNode: \n", self.curr_gene)
-        print("GENE_POOl IN expandNode: \n", self.gene_pool[0])
+        #print("CURR GENE IN expandNode: \n", self.curr_gene)
+        #print("GENE_POOl IN expandNode: \n", self.gene_pool[0])
         steps = self.learningUtility(self.gene_pool[self.curr_gene],nextState)
         #sprint(steps)
         newDepth = node.depth + 1
@@ -345,20 +341,20 @@ class AIPlayer(Player):
     # This agent doens't learn
     # 
     def registerWin(self, hasWon):
-      print("GENE: \n", self.gene_pool[self.curr_gene])
-      print("CURR GENE: \n", self.curr_gene)
+      #print("GENE: \n", self.gene_pool[self.curr_gene])
+      #print("CURR GENE: \n", self.curr_gene)
       if hasWon:
-        self.finalFit += self.fitness
-      else:
-        self.finalFit += -self.fitness
+        self.finalFit += 1 #self.fitness
+      #else:
+        #self.finalFit += -self.fitness
       
       if self.gamesPlayed == 1:
         self.fitness_list.append((self.fitness,self.gene_pool[self.curr_gene]))
         self.curr_gene += 1
         self.gamesPlayed = 0
       
-      print("CURR GENE PART 2: \n", self.curr_gene)
-      print("Lengt of Pop: \n", len(self.gene_pool))
+      #print("CURR GENE PART 2: \n", self.curr_gene)
+      #print("Lengt of Pop: \n", len(self.gene_pool))
       if self.curr_gene == len(self.gene_pool):
         self.gene_pool = self.create_nextgen()
         self.curr_gene = 0
@@ -473,7 +469,6 @@ class AIPlayer(Player):
     #   currentState - A clone of the current state (GameState)
     #                 This will assumed to be a fast clone of the state
     #                 i.e. the board will not be needed/used
-    ##
     def heuristicStepsToGoal(self, currentState, current_move):
    
       myState = currentState.fastclone()
