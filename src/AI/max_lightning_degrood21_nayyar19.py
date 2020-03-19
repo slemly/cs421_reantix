@@ -34,15 +34,23 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer, self).__init__(inputPlayerId, "Max_Lightning")
+        super(AIPlayer, self).__init__(inputPlayerId, "Gene_Splicer")
         self.gene_pool = [] #population
         self.curr_gene = 0 #next to be evaluated gene index
         self.fitness_list = [] #fitness of each gene of curr population
-        self.fitness = 0
-        self.finalFit = 0
-        self.gamesPlayed = 0
-        self.init_pop()
+        self.fitness = 0 #fitness to calculate and add to fitness list
+        #was used for fitness but changed to win-loss rate
+        self.finalFit = 0 #might not need this
+        self.gamesPlayed = 0 #how many games a gene was used
+        self.init_pop() #creates the population
 
+    ## init_pop
+    #
+    # creates population randomly if not file is present
+    # if file is present then uses that population
+    # either way writes the population to file
+    # and clears fitness list and curr_gene set to 0
+    ## 
     def init_pop(self):
       curr_dir = os.getcwd()
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
@@ -69,12 +77,21 @@ class AIPlayer(Player):
       self.fitness_list = []
       self.curr_gene = 0
 
+    ## create_gene
+    #
+    # helper method for init_random_genes
+    ##
     def create_gene(self):
       to_return = []
       for i in range(0,12):
         to_return.append(random.uniform(-10,10))
       return to_return
 
+    ## init_random_genes
+    #
+    # if there was no file for population this
+    # is called to created 12 genes with random weights
+    ##
     def init_random_genes(self):
       to_return = []
       num_to_make = 12
@@ -83,7 +100,11 @@ class AIPlayer(Player):
         to_return.append(self.create_gene())
         made_count+=1
       return to_return 
-
+    
+    ## splice_genes
+    #
+    # helper method for creating new generation
+    ##
     def splice_genes(self, gene_1, gene_2):
       assert len(gene_1) == len(gene_2), "Lengths of spliced genes not equal"
       rand_cut_ind = random.randint(0,len(gene_1)-1)
@@ -103,6 +124,12 @@ class AIPlayer(Player):
 
       return (child1, child2)
 
+    ## create_nextgen
+    # 
+    # creates a new generation by splitting up best parents
+    # and having a 25% chance of mutation in either child that
+    # was created
+    ##
     def create_nextgen(self):
       curr_dir = os.getcwd()
       nextGen = []
@@ -124,7 +151,13 @@ class AIPlayer(Player):
       to_write.close()
       print("NEXT GEN: ", nextGen[0])
       return nextGen
-        
+    
+    ## learningUtility
+    # 
+    # Calculates a Utility for a state 
+    # based on features we picked for the 
+    # curr gene 
+    ##
     def learningUtility (self, gene, currentState):
       myState = currentState.fastclone()
       me = myState.whoseTurn
@@ -145,41 +178,46 @@ class AIPlayer(Player):
       
       returnSum = 0
 
+      #food difference
       returnSum += gene[0]*(myFood - enemyFood)
+      #difference in queen health
       if myQueen != None and enemyQueen != None:
         returnSum += gene[1]*(myQueen.health - enemyQueen.health)
+      #difference of amount of soldiers
       returnSum += gene[2]*(len(myOffense)-len(enemyOffense))
+      #difference in amount of workers
       returnSum += gene[3]*(len(myWorkers)-len(enemyWorkers))
+      #1 if we have mor offensive capability
       returnSum += gene[4]*(1 if len(myOffense)-len(enemyOffense) > 0 else 0)
-
+      #avg dist between enemy queen and my offensive soldiers
       avgDist = 0
       if len(myOffense) > 0 and enemyQueen != None:
         for soldier in myOffense:
           avgDist += approxDist(enemyQueen.coords, soldier.coords)
         avgDist = avgDist/len(myOffense)
       returnSum += gene[5]*(avgDist)
-
+      #avg dist between enemy offensive soldiers and my queen
       avgDist = 0
       if len(enemyOffense) > 0 and myQueen != None:
         for soldier in enemyOffense:
           avgDist += approxDist(myQueen.coords, soldier.coords)
         avgDist = avgDist/len(enemyOffense)
       returnSum += gene[6]*(avgDist)
-
+      #avg dist between enemy anthill and my soldier ants
       avgDist = 0
       if len(myOffense) > 0:
         for soldier in myOffense:
           avgDist += approxDist(enemyHill.coords, soldier.coords)
         avgDist = avgDist/len(myOffense)
       returnSum += gene[7]*(avgDist)
-
+      #avg dist between my hill and enemy soldiers
       avgDist = 0
       if len(enemyOffense) > 0:
         for soldier in enemyOffense:
           avgDist += approxDist(myHill.coords, soldier.coords)
         avgDist = avgDist/len(enemyOffense)
       returnSum += gene[8]*(avgDist)
-
+      #avg dist between my soldiers and closest enemy soldier
       indexOfClosest = 0
       if len(enemyOffense) > 0:
         count = 0
@@ -193,14 +231,14 @@ class AIPlayer(Player):
           avgDist += approxDist(soldier.coords, enemyOffense[indexOfClosest].coords)
         avgDist = avgDist/len(myOffense) 
       returnSum += gene[9]*(avgDist)
-
+      #avg dist between my workers and my queen
       avgDist = 0
       if len(myWorkers) > 0 and myQueen != None:
         for w in myWorkers:
           avgDist += approxDist(myQueen.coords, w.coords)
         avgDist = avgDist/len(myWorkers)
       returnSum += gene[10]*(avgDist)
-
+      #avg dist between my queen and enemy queen
       dist = 0
       if myQueen != None and enemyQueen != None:
         dist = approxDist(myQueen.coords, enemyQueen.coords)
@@ -338,7 +376,7 @@ class AIPlayer(Player):
     ##
     #registerWin
     #
-    # This agent doens't learn
+    # Learns by giving a fitness of how many games the gene won
     # 
     def registerWin(self, hasWon):
       #print("GENE: \n", self.gene_pool[self.curr_gene])
