@@ -15,7 +15,6 @@ sys.path.append("..")
 MAX_DEPTH = 3
 ARBIT_LARGE = 10**6
 
-game_ticker = 0
 ##
 #AIPlayer
 #Description: The responsbility of this class is to interact with the game by
@@ -55,7 +54,7 @@ class AIPlayer(Player):
       curr_dir = os.getcwd()
       if not os.path.exists(os.path.join(curr_dir, "degrood21_lemly21_pop.txt")):
         self.gene_pool = self.init_random_genes()
-        print(self.gene_pool)
+        #print(self.gene_pool)
         to_write = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"),"x")
         for gene in self.gene_pool:
           for item in gene:
@@ -66,8 +65,6 @@ class AIPlayer(Player):
         to_open = open(os.path.join(curr_dir, "degrood21_lemly21_pop.txt"), "r")
         file_content = to_open.readlines()
         for line in file_content:
-          # self.gene_pool.append(line)
-          # self.gene_pool = [float(s) for s in line.split(' ')]
           to_append = []
           splitLine = line.split(' ')
           for i in range(len(splitLine)-1):
@@ -219,7 +216,7 @@ class AIPlayer(Player):
       returnSum += gene[8]*(avgDist)
       #avg dist between my soldiers and closest enemy soldier
       indexOfClosest = 0
-      if len(enemyOffense) > 0:
+      if len(enemyOffense) > 0 and myQueen != None:
         count = 0
         for off in enemyOffense:
           if approxDist(off.coords,myQueen.coords) <= approxDist(enemyOffense[indexOfClosest].coords,myQueen.coords):
@@ -244,7 +241,7 @@ class AIPlayer(Player):
         dist = approxDist(myQueen.coords, enemyQueen.coords)
       returnSum += gene[11]*(dist)
 
-      return returnSum
+      return ARBIT_LARGE - returnSum
 
 
     ##
@@ -379,20 +376,15 @@ class AIPlayer(Player):
     # Learns by giving a fitness of how many games the gene won
     # 
     def registerWin(self, hasWon):
-      #print("GENE: \n", self.gene_pool[self.curr_gene])
-      #print("CURR GENE: \n", self.curr_gene)
       if hasWon:
-        self.finalFit += 1 #self.fitness
-      #else:
-        #self.finalFit += -self.fitness
+        self.fitness += 1 #self.fitness
       
-      if self.gamesPlayed == 1:
+      if self.gamesPlayed == 5:
         self.fitness_list.append((self.fitness,self.gene_pool[self.curr_gene]))
+        self.fitness = 0
         self.curr_gene += 1
         self.gamesPlayed = 0
       
-      #print("CURR GENE PART 2: \n", self.curr_gene)
-      #print("Lengt of Pop: \n", len(self.gene_pool))
       if self.curr_gene == len(self.gene_pool):
         self.gene_pool = self.create_nextgen()
         self.curr_gene = 0
@@ -498,145 +490,6 @@ class AIPlayer(Player):
 
       bernies_one_percent = math.ceil(len(node_list)*0.1)
       return node_list[0:max(bernies_one_percent, 2)]
-
-    ##
-    #heuristicStepsToGoal
-    #Description: Gets the number of moves to get to a winning state from the current state
-    #
-    #Parameters:
-    #   currentState - A clone of the current state (GameState)
-    #                 This will assumed to be a fast clone of the state
-    #                 i.e. the board will not be needed/used
-    def heuristicStepsToGoal(self, currentState, current_move):
-   
-      myState = currentState.fastclone()
-      me = myState.whoseTurn
-      enemy = abs(me - 1)
-      myInv = getCurrPlayerInventory(myState)
-      myFood = myInv.foodCount
-      enemyInv = getEnemyInv(self, myState)
-      tunnels = getConstrList(myState, types=(TUNNEL,))
-      myTunnel = tunnels[1] if (tunnels[0].coords[1] > 5) else tunnels[0]
-      enemyTunnel = tunnels[0] if (myTunnel is tunnels[1]) else tunnels[1]
-      hills = getConstrList(myState, types=(ANTHILL,))
-      myHill = hills[1] if (hills[0].coords[1] > 5) else hills[0]
-      enemyHill = hills[1] if (myHill is hills[0]) else hills[0]
-      enemyQueen = enemyInv.getQueen()
-
-      foods = getConstrList(myState, None, (FOOD,))
-
-      myWorkers = getAntList(myState, me, (WORKER,))
-      myOffense = getAntList(myState, me, (SOLDIER,))
-      enemyWorkers = getAntList(myState, enemy, (WORKER,))
-
-      flag = False
-      if len(enemyWorkers) == 0 and len(myOffense) > 0:
-        flag = True
-
-      flag = False
-
-      # "steps" val that will be returned
-      occupyWin = 0
-
-      # keeps one offensive ant spawned
-      # at all times
-      if len(myOffense) < 1:
-        occupyWin += 20
-
-      elif len(myOffense) <= 2:
-        occupyWin += 30
-
-      # encourage more food gathering
-      if myFood < 1:
-        occupyWin += 20
-
-      # want to kill enemy queen
-      if enemyQueen == None:
-        occupyWin -= 1000
-
-      health = 0
-      if not enemyQueen == None:
-        health = enemyQueen.health
-
-      # calculation for soldier going
-      # to kill enemyworker and after
-      # going to sit on enemy anthill
-      dist = 100
-      for ant in myOffense:
-        if len(enemyWorkers) == 0:
-          if not enemyQueen == None:
-            dist = approxDist(ant.coords, enemyHill.coords)
-          else:
-            dist += health
-
-        else:
-          dist = approxDist(ant.coords, enemyWorkers[0].coords) + 10
-          if len(enemyWorkers) > 1:
-            dist += 10
-
-      occupyWin += (dist) + (enemyHill.captureHealth)
-    
-      # Gather food
-      foodWin = occupyWin
-      foodNeeded = 11 - myFood
-      for w in myWorkers:
-        distanceToTunnel = approxDist(w.coords, myTunnel.coords)
-        distanceToHill = approxDist(w.coords, myHill.coords)
-        distanceToFood = 9999
-        for food in foods:
-          if approxDist(w.coords, food.coords) < distanceToFood:
-            distanceToFood = approxDist(w.coords, food.coords)
-        if w.carrying:  # if carrying go to hill/tunnel
-          foodWin += min(distanceToHill, distanceToTunnel) - 9.5
-
-          if w.coords == myHill.coords or w.coords == myTunnel.coords:
-            foodWin += 1.5
-
-          if not len(myOffense) == 0:
-            foodWin -= 1
-
-        else:  # if not carrying go to food
-          if w.coords == foods[0].coords or w.coords == foods[1].coords:
-            foodWin += 1.2
-
-            break
-          foodWin += distanceToFood/3 - 1.5
-
-          if not len(myOffense) == 0:
-            foodWin -= 1
-
-        occupyWin += foodWin * (foodNeeded)
-     
-      #Keeping Queen away from tunnel and hill
-      if not myInv.getQueen() == None:
-        if approxDist(myInv.getQueen().coords, myTunnel.coords) > 5:
-          occupyWin -= 100
-        if approxDist(myInv.getQueen().coords, myHill.coords) > 5:
-          occupyWin -= 100
-
-      #Sending one worker to always deliver food to tunnel
-      if len(myWorkers) == 2:
-        occupyWin += approxDist(myWorkers[1].coords, myTunnel.coords)*2
-
-      #Ensuring the workers dont stall in front of each other
-      if len(myWorkers) == 2 and len(myOffense) != 1:
-        if approxDist(myWorkers[0].coords, myWorkers[1].coords) < 2:
-          occupyWin += 100
-
-      #Keeping workers away from offense preventing stalls
-      if len(myOffense) > 0 and len(myWorkers) > 0:
-        for worker in myWorkers:
-          if approxDist(worker.coords, myOffense[0].coords) < 2:
-            occupyWin += 500
-      
-      #If offense is on enemy hill we want to stay
-      if len(myOffense) > 0:
-        if myOffense[0].coords == enemyHill.coords:
-          occupyWin -= 1000
-    
-      return ARBIT_LARGE - occupyWin
-
-
 
 ##
 # Node Class
