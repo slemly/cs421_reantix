@@ -316,8 +316,8 @@ class AIPlayer(Player):
       nodes = []
       for move in moves:
         nextState = getNextStateAdversarial(node.state, move)
-        print("CURR GENE IN expandNode: \n", self.curr_gene)
-        print("GENE_POOl IN expandNode: \n", self.gene_pool[0])
+        # print("CURR GENE IN expandNode: \n", self.curr_gene)
+        # print("GENE_POOl IN expandNode: \n", self.gene_pool[0])
         steps = self.learningUtility(self.gene_pool[self.curr_gene],nextState)
         #sprint(steps)
         newDepth = node.depth + 1

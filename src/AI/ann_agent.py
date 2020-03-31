@@ -38,8 +38,194 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "Neo")
+        super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
     
+
+    def init_nn(self, currentState):
+        to_return_list = []
+        myState = currentState
+        steps = 0
+
+        #it's me!
+        me = myState.whoseTurn
+        enemy = 1-me
+
+        #fetching constructions
+        tunnels = getConstrList(myState, types = (TUNNEL,))
+        hills = getConstrList(myState, types = (ANTHILL,))
+        allFoods = getConstrList(myState, None, (FOOD,))
+
+
+        #finding out what belongs to whom
+        myInv = getCurrPlayerInventory(myState)
+        myFoodCount = myInv.foodCount
+        # my items/constructs/ants
+        myTunnel = myInv.getTunnels()[0]
+        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        myWorkers = getAntList(myState, me, (WORKER,))
+        mySoldiers = getAntList(myState, me, (SOLDIER,))
+        myRSoldiers = getAntList(myState, me, (R_SOLDIER,))
+        myDrones = getAntList(myState, me, (DRONE,))
+        myQueen = myInv.getQueen()
+        myAnts = myInv.ants
+        # enemy items/constructs/ants
+        enemyInv = getEnemyInv(self, myState)
+        enemyTunnel = enemyInv.getTunnels()[0]
+        enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
+        enemyWorkers = getAntList(myState, enemy, (WORKER,))
+        ememySoldiers = getAntList(myState, enemy, (SOLDIER,))
+        enemyRSoldiers = getAntList(myState, enemy, (R_SOLDIER,))
+        enemyDrones = getAntList(myState, enemy, (DRONE,))
+        enemyQueen = enemyInv.getQueen()
+        #arbitrary food distance value for workers to work around
+        foodDist = 9999999
+        foodTurns = 0
+        isTunnel = False
+
+        # If-statetments intended to punish or reward the agent based upon the status of the environment
+        if enemyWorkers == None or enemyWorkers == []:
+            # steps -=1000
+            to_return_list.append(["enemy workers?",0])
+        else:
+            to_return_list.append(["enemy worker?",1])
+        if len(enemyWorkers) > 0:
+            # steps += 150
+            to_return_list.append(["enemy worker count",0.15])
+        else:
+            to_return_list.append(["enemy worker count",0])
+        if enemyQueen == None:
+            # steps -= 10000
+            to_return_list.append(["enemy queen alive?",0])
+        else:
+            to_return_list.append(["enemy queen alive?",1])
+        if len(myWorkers) < 1:
+            steps += 150
+            to_return_list.append(["friendly workers alive?",0.15])
+        else:
+            to_return_list.append(["friendly workers alive?",0])
+        if myQueen.health == 0:
+            steps += 999999999
+            to_return_list.append(["friendly queen alive?",1])
+        else:
+            to_return_list.append(["friendly queen alive?",0])
+        if myQueen.coords == myHill.coords:
+            steps += 50
+            to_return_list.append(["friendly queen on hill?",0.05])
+        else:
+            to_return_list.append(["friendly queen on hill?",0])
+        queenOnFood = False
+        for food in allFoods:
+            if myQueen.coords == food.coords:
+                steps += 20
+                queenOnFood = True
+                to_return_list.append(["friendly queen on food?",0.02])
+                break
+        if not queenOnFood:
+            to_return_list.append(["friendly queen on food?",0])
+
+
+        if len(myDrones) < 1:
+            steps += 40
+            to_return_list.append(["friendly drone count",0.04])
+        elif len(myDrones) < 3:
+            steps += 20
+            to_return_list.append(["friendly drone count",0.02])
+        elif len(myDrones) > 3:
+            steps += 35
+            to_return_list.append(["friendly drone count",0.035])
+        
+        if len(mySoldiers) < 1:
+            steps += 25
+            to_return_list.append(["friendly soldier count",0.025])
+        else:
+            to_return_list.append(["friendly soldier count",0])
+        
+        # iteration through worker array to 
+        for worker in myWorkers: 
+            if worker.carrying: #worker has food; go to the hill
+                distToTunnel = stepsToReach(myState, worker.coords, myTunnel.coords)
+                distToHill = stepsToReach(myState, worker.coords, myHill.coords)
+                foodDist = min(distToTunnel, distToHill) - 0.2
+                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+                    foodDist = 0.2 #scalar for good food retrieval
+            else: # Otherwise, we want to move toward the food
+                if worker.coords == myHill.coords or worker.coords == myTunnel.coords:
+                    foodDist = 0.2 #scalar for good food retrieval
+                closestFoodDist = 99999
+                bestFood = None
+                for food in allFoods:
+                    distToCurrFood = stepsToReach(myState, worker.coords, food.coords)
+                    if worker.coords == food.coords:
+                        bestFood = food
+                        closestFoodDist = 0.01 #scalar for good food retrieval
+                        break
+                    if distToCurrFood <= closestFoodDist:
+                        closestFoodDist = distToCurrFood
+                        bestFood = food
+                foodDist = closestFoodDist
+                if approxDist(myQueen.coords, bestFood.coords) <= approxDist(worker.coords, bestFood.coords):
+                    steps += 75  
+            steps += foodDist * (11 - myInv.foodCount)
+        numToAppend = float((foodDist * (11 - myInv.foodCount)) / (foodDist * (11)))
+        to_return_list.append(["food distance calculation", numToAppend])
+
+        #aiming for a win through offense
+        bestattackDist = 20
+        attackDist = 999999
+        for drone in myDrones:
+            # primary target for drones is enemy queen
+            if enemyQueen != None:            
+                steps += stepsToReach(myState, drone.coords, enemyQueen.coords)
+            else:
+                attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
+            if attackDist < bestattackDist:
+                bestattackDist = attackDist
+            # steps += attackDist
+        numToAppend = float((20 - bestattackDist ) / 20)
+        to_return_list.append(["best drone to enemy queen distance", numToAppend])
+        
+                
+
+        # # Target enemy workers with soldiers, then move to the anthill
+        bestattackDist = 20
+        for soldier in mySoldiers:
+            if len(enemyWorkers) > 0:
+                for worker in enemyWorkers:
+                    stepsToWorker = stepsToReach(myState, soldier.coords, worker.coords) + 1
+                    stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
+                    if stepsToWorker <= stepsToHill:
+                        # steps += stepsToWorker
+                        if stepsToWorker < bestattackDist:
+                            bestattackDist = stepsToWorker
+                    else: 
+                        # steps += stepsToHill
+                        if stepsToHill < bestattackDist:
+                            bestattackDist = stepsToHill
+            else:
+                stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
+                # steps += stepsToHill
+                if stepsToHill < bestattackDist:
+                    bestattackDist = stepsToHill
+
+        numToAppend = float((20 - bestattackDist ) / 20)
+        to_return_list.append(["soldier to nearest enemy target distance", numToAppend])
+        
+        # this is intended to keep an ant on the enemy hill if it happens to make its way there
+        for ant in myAnts:
+            if ant.coords == enemyHill.coords:
+                # steps = steps * 0.025
+                for element in to_return_list:
+                    element[1] = element[1]*0.025
+        if len(myWorkers) >= 2:
+            # steps *= 0.85
+            for element in to_return_list:
+                element[1] = element[1]*0.85
+        for element in to_return_list:
+            print(element)
+        # print(to_return_list)
+        return to_return_list
+    
+
     ##
     #getPlacement
     #
@@ -137,10 +323,12 @@ class AIPlayer(Player):
         return enemyLocations[0]
 
     ##
-    # TODO: Complete this function.
+    #
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
+        self.init_nn(currentState)
+        print("#############################")
         myState = currentState
         steps = 0
 
