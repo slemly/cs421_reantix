@@ -7,6 +7,7 @@ from Construction import CONSTR_STATS
 from Ant import UNIT_STATS
 from Move import Move
 from GameState import *
+import numpy as np
 from AIPlayerUtils import *
 
 # CS421A AI
@@ -41,7 +42,7 @@ class AIPlayer(Player):
         super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
     
 
-    def init_nn(self, currentState):
+    def init_nn_inputs(self, currentState):
         to_return_list = []
         myState = currentState
         steps = 0
@@ -225,6 +226,60 @@ class AIPlayer(Player):
         # print(to_return_list)
         return to_return_list
     
+    def init_firstlayer_nodelist(self, inputList):
+        toReturn = []
+        for item in inputList:
+            toReturn.append([])
+        return toReturn
+
+    def init_weights_array(self, inputList, nodeList):
+        weights_list =[]
+        for item in inputList:
+            item_to_nodes = []
+            for node in nodeList:
+                item_to_nodes.append(random.uniform(-1,1))
+            weights_list.append(item_to_nodes)
+        return weights_list
+
+    def init_bias_inputs_and_weights(self, nodeList):
+        toReturn=[]
+        for node in nodeList:
+            toReturn.append([1,random.uniform(-1,1)])
+        return toReturn
+
+
+    def create_inputs_and_bias(self, inputList):
+        first_layer_nodes = self.init_firstlayer_nodelist(inputList)
+        bias_and_weights = self.init_bias_inputs_and_weights(first_layer_nodes)
+        input_weights_array = self.init_weights_array(inputList,first_layer_nodes)
+        return [first_layer_nodes,bias_and_weights,input_weights_array]
+
+    def generate_layer_output(self,inputList,nodeList,weights):
+        for n in range(0,len(nodeList)):
+            inputSum = 0
+            for i in range(len(inputList)):
+                inputSum += inputList[i] * weights[i][n]
+            nodeList[n][0] = inputSum
+            #at this point the nodelist contains the sums of all inputs with weights applied
+
+        for n in range(0,len(nodeList)):
+            nodeList[n][0] = self.sigmoid(nodeList[n][0])
+
+        #at this point the nodelist's entries all have the sigmoid func applied to them
+        return nodeList
+
+    def sigmoid(self, x):
+        #applying the sigmoid function
+        return 1 / (1 + np.exp(-x))
+
+    def sigmoid_derivative(self, x):
+        #computing derivative to the Sigmoid function
+        return x * (1 - x)
+
+
+
+
+
 
     ##
     #getPlacement
@@ -327,7 +382,7 @@ class AIPlayer(Player):
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        self.init_nn(currentState)
+        # self.init_nn(currentState)
         print("#############################")
         myState = currentState
         steps = 0
