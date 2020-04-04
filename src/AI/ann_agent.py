@@ -43,21 +43,59 @@ class AIPlayer(Player):
     
 
 # trains neural network
-    def train_NN(self):
+    def train_NN(self, state):
         num_layers = 2
-        nn = self.create_nn(num_layers)
+        inputTupleList = init_nn_inputs(state)
+        inputList = []
+        for inputTuple in inputTupleList:
+            inputList.append(inputTuple[2])
+        nn = self.create_nn(num_layers, inputList)
+
         print(nn)
         pass
+    
+    # given the neural network skeleton, it returns necessary random weights 
+    # params:
+    # nn_skeleton: skeleton of NN (use createNN() to obtain this)
+    def init_random_weights(self, nn_skeleton):
+        num_weights = []
+        weights_list = []
 
-    def create_NN(self, layers, inputList):
+        # finds amount of weights needed per node
+        for i in range(1, len(nn_skeleton)):
+            amount_needed = len(nn_skeleton[i])
+            if amount_needed == 0: 
+                amount_needed = 1
+            num_weights.append(amount_needed)
+
+        # intializes weights needed for the amount of nodes in next layer
+        i = 0
+        for layer in nn_skeleton:
+            layer_array = []
+            for node in layer:
+                node_array = []
+                for j in range(num_weights[i]):
+                    node_array.append(random.uniform(-1,1))
+                layer_array.append(node_array)
+            i += 1 # increases index for num_weights
+            weights_list.append(layer_array)
+        return weights_list
+        
+
+    # intializes neural network given inputs and random weights
+    # params:
+    # num_layers: number of layers not including input (first) layer
+    # inputList: list of first inputs
+    def create_NN(self, num_layers, inputList):
         nn = []
+        nn.append(inputList)
         num_nodes_to_have = len(inputList)
-        for i in range(layers):
+        for i in range(1, num_layers):
             if i == 0:
-                nn.append(self.create_layer(num_nodes_to_have))
+                nn.append(create_layer(num_nodes_to_have))
             else:
                 num_nodes_to_have = int(num_nodes_to_have * 0.66666)
-                nn.append(self.create_layer(num_nodes_to_have))
+                nn.append(create_layer(num_nodes_to_have))
             if len(nn[i]) == 1:
                 break
         if nn[len(nn) - 1] != 1:    
@@ -76,7 +114,6 @@ class AIPlayer(Player):
 
     def init_nn_inputs(self, currentState):
         to_return_list = []
-        inputs_dict = init_inputs_dict()
         myState = currentState
         steps = 0
 
@@ -119,9 +156,9 @@ class AIPlayer(Player):
         # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             # steps -=1000
-            inputs_dict["enemy workers?"] = 0
+            to_return_list.append(["enemy workers?",0])
         else:
-            inputs_dict["enemy workers?"] = 1
+            to_return_list.append(["enemy worker?",1])
         if len(enemyWorkers) > 0:
             # steps += 150
             to_return_list.append(["enemy worker count",0.15])
