@@ -107,7 +107,7 @@ class AIPlayer(Player):
 
     # given the neural network skeleton, it returns necessary random weights 
     # params:
-    # nn_skeleton: skeleton of NN (use createNN() to obtain this)
+    # nn_skeleton: skeleton of NN (use createNN() to obtain this) 
     def init_random_weights(self, nn_skeleton):
         num_weights = []
         weights_list = []
@@ -121,7 +121,8 @@ class AIPlayer(Player):
 
         # intializes weights needed for the amount of nodes in next layer
         i = 0
-        for layer in nn_skeleton:
+        for i in range(0, len(nn_skeleton) - 1):
+            layer = nn_skeleton[i]
             layer_array = []
             for node in layer:
                 node_array = []
@@ -130,6 +131,8 @@ class AIPlayer(Player):
                 layer_array.append(node_array)
             i += 1 # increases index for num_weights
             weights_list.append(layer_array)
+            # print("weightslist: ", weights_list)
+
         return weights_list
         
 
