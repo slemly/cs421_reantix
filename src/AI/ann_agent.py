@@ -81,7 +81,7 @@ class AIPlayer(Player):
     # node_num: the number of the node
     # inputs: the inputs of a given layer
     # weights_of_inputs: the weights of the inputs of the given layer
-    def calc_node_out(self, node_num, inputs, weights_of_inputs):
+    def calc_node_out(self,node_num, inputs, weights_of_inputs):
         sum = 0
         print("start of calc node out +++++++++++++++++")
         print("inputs", inputs)
