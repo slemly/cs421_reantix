@@ -54,6 +54,57 @@ class AIPlayer(Player):
         print(nn)
         pass
     
+    # calculates forward propogation of the nn
+    # params:
+    # nn: neural network skeleton (use createNN)
+    # weights: all the weights
+    # PROBLEM: it does not update the correct node as its iterating. only updated the first index. 
+    # need to find a way to increment to update the correct position
+    def forward(self, nn, weights):
+        # print(weights)
+        # print(nn)
+        for j in range(len(weights)):
+            print("j inside forward", j)
+            weights_of_inputs = weights[j] 
+            k = 0
+            for i in range(len(nn)):
+                inputs = nn[i]
+                print("nn inside forward", nn)
+                output = calc_node_out(j, inputs, weights_of_inputs)
+                print("nn[i+1][j]  before", nn[i+1][j])
+                nn[i+1][j] = output
+                print("nn[i+1][j]  after", nn[i+1][j] )
+        return nn
+    
+    # given the inputs and its weights, it calculates the ouput
+    # params: 
+    # node_num: the number of the node
+    # inputs: the inputs of a given layer
+    # weights_of_inputs: the weights of the inputs of the given layer
+    def calc_node_out(self, node_num, inputs, weights_of_inputs):
+        sum = 0
+        print("start of calc node out +++++++++++++++++")
+        print("inputs", inputs)
+        print("weights of inputs", weights_of_inputs)
+        for i in range(len(weights_of_inputs)):
+            print("i", i)
+            input = inputs[i]
+            weights_of_input = weights_of_inputs[i]
+            weight_of_input = weights_of_input[node_num]
+    
+            # print("inputs[i]", inputs[i])
+            # input = float(inputs[i])
+            # weight = weights_of_inputs[node_num]
+            # print(weights_of_input)
+            # weight =  weights_of_input[node_num]
+            print("weight", weight_of_input)
+            print("input", input)
+            sum += (input * weight_of_input)
+        
+        output = sigmoid(sum)
+        return output 
+
+
     # given the neural network skeleton, it returns necessary random weights 
     # params:
     # nn_skeleton: skeleton of NN (use createNN() to obtain this)
