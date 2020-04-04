@@ -42,6 +42,29 @@ class AIPlayer(Player):
         super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
     
 
+    def run_NN(self):
+        nn = self.create_nn(2)
+        print(nn)
+        pass
+
+    def create_NN(self, layers, inputList):
+        nn = []
+        num_nodes_to_have = len(inputList)
+        for i in range(layers):
+            if i == 0:
+                nn.append(self.create_layer(num_nodes_to_have))
+            else:
+                num_nodes_to_have = int(num_nodes_to_have * 0.66666)
+                nn.append(self.create_layer(num_nodes_to_have))
+            if len(nn[i]) == 1:
+                break
+        if nn[len(nn) - 1] != 1:    
+            nn.append([])
+        return nn
+
+
+
+
     def init_nn_inputs(self, currentState):
         to_return_list = []
         myState = currentState
@@ -226,9 +249,15 @@ class AIPlayer(Player):
         # print(to_return_list)
         return to_return_list
     
-    def init_firstlayer_nodelist(self, inputList):
+    # def init_firstlayer_nodelist(self, inputList):
+    #     toReturn = []
+    #     for item in inputList:
+    #         toReturn.append([])
+    #     return toReturn
+
+    def create_layer(self, num_elements):
         toReturn = []
-        for item in inputList:
+        for i in range(num_elements):
             toReturn.append([])
         return toReturn
 
@@ -246,7 +275,6 @@ class AIPlayer(Player):
         for node in nodeList:
             toReturn.append([1,random.uniform(-1,1)])
         return toReturn
-
 
     def create_inputs_and_bias(self, inputList):
         first_layer_nodes = self.init_firstlayer_nodelist(inputList)
@@ -276,7 +304,18 @@ class AIPlayer(Player):
         #computing derivative to the Sigmoid function
         return x * (1 - x)
 
+    def backprop(self):
+        pass
 
+    def calc_error(self, expected, actual):
+        return expected - actual 
+
+    def calc_delta(self, x):
+        return self.sigmoid(x) * (1 - self.sigmoid(x))
+
+    def adjust(self, weight, alpha, input, error):
+        deriv = self.sigmoid_derivative(input)
+        return  weight + (alpha * error * deriv* input)
 
 
 
@@ -382,7 +421,8 @@ class AIPlayer(Player):
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        # self.init_nn(currentState)
+        ins = self.init_nn_inputs(currentState)
+        print(self.create_NN(3, ins))
         print("#############################")
         myState = currentState
         steps = 0
