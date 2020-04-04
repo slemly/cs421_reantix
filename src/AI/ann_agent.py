@@ -42,8 +42,10 @@ class AIPlayer(Player):
         super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
     
 
-    def run_NN(self):
-        nn = self.create_nn(2)
+# trains neural network
+    def train_NN(self):
+        num_layers = 2
+        nn = self.create_nn(num_layers)
         print(nn)
         pass
 
@@ -63,10 +65,18 @@ class AIPlayer(Player):
         return nn
 
 
-
+    # initializes a dictionary with keys
+    def init_inputs_dict(self):
+        keys = ["enemy workers?", "enemy worker count", "enemy queen alive?", "friendly workers alive?",
+        "friendly queen alive?", "friendly queen on hill?", "friendly queen on food?", "friendly drone count", 
+        "friendly soldier count"]
+        inputs = dict([(key, None) for key in keys])
+        print(inputs)
+        return inputs
 
     def init_nn_inputs(self, currentState):
         to_return_list = []
+        inputs_dict = init_inputs_dict()
         myState = currentState
         steps = 0
 
@@ -109,9 +119,9 @@ class AIPlayer(Player):
         # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             # steps -=1000
-            to_return_list.append(["enemy workers?",0])
+            inputs_dict["enemy workers?"] = 0
         else:
-            to_return_list.append(["enemy worker?",1])
+            inputs_dict["enemy workers?"] = 1
         if len(enemyWorkers) > 0:
             # steps += 150
             to_return_list.append(["enemy worker count",0.15])
