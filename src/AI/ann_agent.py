@@ -191,15 +191,32 @@ class AIPlayer(Player):
             print(layer)
         return new_weights
         
-    def generate_layer_errors(self, weights, layer0, layer1): # generates errors from layer0 to layer1
+    def generate_layer_errors(self, weights, layer0, layer1, expected): # generates errors from layer0 to layer1
         new_errors = []
         for k in range(len(layer0)):
             for i in range(len(layer1)):
                 internode_weight = weights[i][k]
                 input = layer1[i]
-
-                
+                error = calc_error(expected, input)
         return new_errors
+
+    def backward_propogate_error(self, network, weights, expected):
+        for i in reversed(range(len(network))):
+            layer = network[i]
+            errors = []
+            if i != len(network) - 1:
+                for j in range(len(layer)):
+                    error = 0.0
+                    for neuron in network[i+1]:
+                        print("") # calc error: error += (neuron['weights'][j] * neuron['delta'])
+                    errors.append(error)
+            else:
+                for j in range(len(layer)):
+                    neuron = layer[j]
+                    print("") # calc error: errors.append(expected[j] - neuron['output'])
+            for j in range(len((layer))):
+                neuron = layer[j]
+                # neuron['delta'] = errors[j] * transfer_derivative(neuron['output'])
         
     def calc_error(self, expected, actual):
         return expected - actual 
