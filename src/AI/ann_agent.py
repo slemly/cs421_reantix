@@ -38,6 +38,25 @@ class AIPlayer(Player):
     #   inputPlayerId - The id to give the new player (int)
     #   cpy           - whether the player is a copy (when playing itself)
     ##
+
+    # network structure:
+    # [
+    # [ [],[],[],[],[],[],[],[],[],[],[],[]] #layer 1
+    #[[],[],[],[],[],[],[]] #layer 2
+    #[ [] ] #layer 3
+    # ]
+    # so value at layer 2 node 4 is nn[1][3][0]
+
+    # weight structure:
+    # [
+    # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 1
+    # [[1],[1],[1],[1],[1],[1],[1]] #layer 2
+    # [ [] ] #layer 3
+    # ]
+    #
+    # so weight from layer 1 node 2 (nn[0][1][0]) to layer 2 node 5 (nn[1][4][0]) 
+    # is accessed weights[0][1][4]
+
     def __init__(self, inputPlayerId):
         super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
 
@@ -50,7 +69,6 @@ class AIPlayer(Player):
         self.backprop(nn,1)
         quit()
         pass
-
     
     def foward_prop(self, ins, nn, weights, bias):
         toReturn = []
@@ -173,18 +191,16 @@ class AIPlayer(Player):
             print(layer)
         return new_weights
         
-
     def generate_layer_errors(self, weights, layer0, layer1): # generates errors from layer0 to layer1
         new_errors = []
         for k in range(len(layer0)):
             for i in range(len(layer1)):
                 internode_weight = weights[i][k]
                 input = layer1[i]
-                
+
                 
         return new_errors
         
-    
     def calc_error(self, expected, actual):
         return expected - actual 
 
