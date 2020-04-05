@@ -40,12 +40,37 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId):
         super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
-    
 
-    def run_NN(self):
-        nn = self.create_nn(2)
-        print(nn)
+    def run_NN(self, ins):
+        # self.test_delta() #test
+        nn = self.create_NN(2,ins)
+        weights = self.create_weights(nn)
+        bias_inputs_and_weights = self.init_all_biases(nn) 
+        nn = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
+        self.backprop(nn,1)
+        quit()
         pass
+
+    
+    def foward_prop(self, ins, nn, weights, bias):
+        toReturn = []
+        
+        # this just removes the string labels from the list of inputs and makes
+        # [[str,float]] => [[float]]; slicing the 2d array didn't work for some reason
+        newins = []
+        for item in ins:
+            newins.append([item[1]])
+        ins = newins       
+        # print(ins)
+
+        for i in range(len(nn)):
+            if i == 0:
+                toReturn.append(self.generate_layer_output(ins,nn[i],weights[i],bias[i]))
+            else:
+                toReturn.append(self.generate_layer_output(nn[i-1], nn[i], weights[i], bias[i]))
+        # for layer in toReturn:
+        #     print(layer)
+        return toReturn # returns a new nn
 
     def create_NN(self, layers, inputList):
         nn = []
@@ -59,12 +84,127 @@ class AIPlayer(Player):
             if len(nn[i]) == 1:
                 break
         if nn[len(nn) - 1] != 1:    
-            nn.append([])
+            nn.append([[]])
         return nn
 
+    def init_all_biases(self, nn_skeleton):
+        toReturn = []
+        for layer in nn_skeleton:
+            row = []
+            for node in layer:
+                row.append([1,random.uniform(-1,1)])
+            toReturn.append(row)
+        return toReturn
+
+    def create_weights(self, nn_skeleton):
+        toReturn = []
+        toReturn.append(self.init_weights_array(nn_skeleton[0], nn_skeleton[0])) # input -> layer 0 mapping
+        for i in range(0, len(nn_skeleton)-1):
+            toReturn.append(self.init_weights_array(nn_skeleton[i], nn_skeleton[i+1])) # layer i -> layer i+1 weight mapping
+        return toReturn
+
+    def create_layer(self, num_elements):
+        toReturn = []
+        for i in range(num_elements):
+            toReturn.append([])
+        return toReturn
+
+    def init_weights_array(self, inputList, nodeList):
+        weights_list =[]
+        for item in inputList:
+            item_to_nodes = []
+            for node in nodeList:
+                item_to_nodes.append(random.uniform(-1,1))
+            weights_list.append(item_to_nodes)
+        return weights_list
+
+    def create_inputs_and_bias(self, inputList):
+        first_layer_nodes = self.init_firstlayer_nodelist(inputList)
+        bias_and_weights = self.init_bias_inputs_and_weights(first_layer_nodes)
+        input_weights_array = self.init_weights_array(inputList,first_layer_nodes)
+        return [first_layer_nodes,bias_and_weights,input_weights_array]
+
+    def generate_layer_output(self,inputList,nodeList, weights, bias):
+        # print("nodes : ", nodeList)
+        # print("biases : ", bias)
+        # print("inputList: ", inputList)
+        # print("weights", weights)
+        for n in range(0,len(nodeList)):
+            inputSum = 0
+            for i in range(len(inputList)):
+                inputSum += inputList[i][0] * weights[i][n]
+            inputSum += bias[n][0] * bias[n][1]
+            nodeList[n].append(inputSum)
+            #at this point the nodelist contains the sums of all inputs with weights applied
+
+        for n in range(0,len(nodeList)):
+            nodeList[n][0] = self.sigmoid(nodeList[n][0])
+
+        #at this point the nodelist's entries all have the sigmoid func applied to them
+        return nodeList
+
+    def sigmoid(self, x):
+        #applying the sigmoid function
+        return 1 / (1 + np.exp(-x))
+
+    def sigmoid_derivative(self, x):
+        #computing derivative to the Sigmoid function
+        return x * (1 - x)
+
+    def test_delta(self):
+        # forcing conditions from the powerpoint for testing purposes
+        err = -0.4101
+        print("test1", self.calc_delta(0.4101, err))
+        
+    
+    # start backpropagation method family
+
+    def backprop(self, nn, exp_out, weights):
+        new_weights = []
+        #calculates the error for the single output node. There's just one so we only need to do this once
+        error = self.calc_error(exp_out, nn[len(nn)-1][0][0])
+        final_node_delta = self.calc_delta(nn[len(nn)-1][0][0], error)
+        # print("error: ", error)
+        # print("final node delta: ", final_node_delta)
+        for i in range(len(nn)-1,1):
+            new_weights.append(generate_layer_errors(weights[i], nn[i-1], nn[i]))
+            
+        for layer in new_weights:
+            print(layer)
+        return new_weights
+        
+
+    def generate_layer_errors(self, weights, layer0, layer1): # generates errors from layer0 to layer1
+        new_errors = []
+        for k in range(len(layer0)):
+            for i in range(len(layer1)):
+                internode_weight = weights[i][k]
+                input = layer1[i]
+                
+                
+        return new_errors
+        
+    
+    def calc_error(self, expected, actual):
+        return expected - actual 
+
+    def calc_delta(self, x, err): # use this one; it's the one from the slides
+        return x * err * (1 - x)
+
+    # def calc_delta(self, x): 
+    #     return self.sigmoid(x) * (1 - self.sigmoid(x))
+
+    def adjust(self, weight, alpha, input, error):
+        deriv = self.sigmoid_derivative(input)
+        return  weight + (alpha * error * deriv* input)
+
+    # end backpropagation method family
 
 
 
+
+
+    # uses heuristic to create inputs to NN from a given state
     def init_nn_inputs(self, currentState):
         to_return_list = []
         myState = currentState
@@ -244,78 +384,12 @@ class AIPlayer(Player):
             # steps *= 0.85
             for element in to_return_list:
                 element[1] = element[1]*0.85
-        for element in to_return_list:
-            print(element)
+        # for element in to_return_list:
+        #     print(element)
         # print(to_return_list)
         return to_return_list
-    
-    # def init_firstlayer_nodelist(self, inputList):
-    #     toReturn = []
-    #     for item in inputList:
-    #         toReturn.append([])
-    #     return toReturn
 
-    def create_layer(self, num_elements):
-        toReturn = []
-        for i in range(num_elements):
-            toReturn.append([])
-        return toReturn
 
-    def init_weights_array(self, inputList, nodeList):
-        weights_list =[]
-        for item in inputList:
-            item_to_nodes = []
-            for node in nodeList:
-                item_to_nodes.append(random.uniform(-1,1))
-            weights_list.append(item_to_nodes)
-        return weights_list
-
-    def init_bias_inputs_and_weights(self, nodeList):
-        toReturn=[]
-        for node in nodeList:
-            toReturn.append([1,random.uniform(-1,1)])
-        return toReturn
-
-    def create_inputs_and_bias(self, inputList):
-        first_layer_nodes = self.init_firstlayer_nodelist(inputList)
-        bias_and_weights = self.init_bias_inputs_and_weights(first_layer_nodes)
-        input_weights_array = self.init_weights_array(inputList,first_layer_nodes)
-        return [first_layer_nodes,bias_and_weights,input_weights_array]
-
-    def generate_layer_output(self,inputList,nodeList,weights):
-        for n in range(0,len(nodeList)):
-            inputSum = 0
-            for i in range(len(inputList)):
-                inputSum += inputList[i] * weights[i][n]
-            nodeList[n][0] = inputSum
-            #at this point the nodelist contains the sums of all inputs with weights applied
-
-        for n in range(0,len(nodeList)):
-            nodeList[n][0] = self.sigmoid(nodeList[n][0])
-
-        #at this point the nodelist's entries all have the sigmoid func applied to them
-        return nodeList
-
-    def sigmoid(self, x):
-        #applying the sigmoid function
-        return 1 / (1 + np.exp(-x))
-
-    def sigmoid_derivative(self, x):
-        #computing derivative to the Sigmoid function
-        return x * (1 - x)
-
-    def backprop(self):
-        pass
-
-    def calc_error(self, expected, actual):
-        return expected - actual 
-
-    def calc_delta(self, x):
-        return self.sigmoid(x) * (1 - self.sigmoid(x))
-
-    def adjust(self, weight, alpha, input, error):
-        deriv = self.sigmoid_derivative(input)
-        return  weight + (alpha * error * deriv* input)
 
 
 
@@ -422,7 +496,8 @@ class AIPlayer(Player):
     ##
     def heuristicStepsToGoal(self, currentState):
         ins = self.init_nn_inputs(currentState)
-        print(self.create_NN(3, ins))
+        # print(self.create_NN(3, ins))
+        self.run_NN(ins)
         print("#############################")
         myState = currentState
         steps = 0
