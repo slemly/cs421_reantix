@@ -41,7 +41,7 @@ class AIPlayer(Player):
 
     # network structure:
     # [
-    # [ [],[],[],[],[],[],[],[],[],[],[],[]] #layer 1
+    # [ [],[],[],[],[],[],[],[],[],[],[],[] ] #layer 1
     #[[],[],[],[],[],[],[]] #layer 2
     #[ [] ] #layer 3
     # ]
@@ -201,13 +201,18 @@ class AIPlayer(Player):
         return new_errors
 
     def backward_propogate_error(self, network, weights, expected):
+        initial_error = self.calc_error(expected, 1)
         for i in reversed(range(len(network))):
             layer = network[i]
             errors = []
-            if i != len(network) - 1:
-                for j in range(len(layer)):
+            if i != len(network) - 1: 
+                for j in range(len(layer)): 
                     error = 0.0
-                    for neuron in network[i+1]:
+                    for neuron in network[i+1]: # for each neuron in the next layer 
+                        # get neuron input and neuron output
+                        # calc neuron delta
+                        # multiply each neuron weight by the neuron delta
+                        # sum the product to error
                         print("") # calc error: error += (neuron['weights'][j] * neuron['delta'])
                     errors.append(error)
             else:
@@ -221,8 +226,9 @@ class AIPlayer(Player):
     def calc_error(self, expected, actual):
         return expected - actual 
 
-    def calc_delta(self, x, err): # use this one; it's the one from the slides
-        return x * err * (1 - x)
+    def calc_delta(self, input, output): # use this one; it's the one from the slides
+        return (output * self.sigmoid_derivative(input))
+        # err * (1 - x)
 
     # def calc_delta(self, x): 
     #     return self.sigmoid(x) * (1 - self.sigmoid(x))
