@@ -66,12 +66,19 @@ class AIPlayer(Player):
         weights = self.create_weights(nn)
         bias_inputs_and_weights = self.init_all_biases(nn) 
         nn = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
+        print(" START NEURAL NETWORK ")
+        for i in range(len(nn)):
+            print("LAYER ", i)
+            print(nn[i])
+        print(" END NEURAL NETWORK ")
+        print(" START WEIGHTS  ")
+        for i in range(len(weights)):
+            print("LAYER ", i)
+            for k in range(len(weights[i])):
+                for m in range(len(weights[i][k])):
+                    print(" WEIGHT FROM NODE/INPUT ",k, " IN LAYER ", i, " TO NODE ", m, " IN LAYER ", i+1, " : ", weights[i][k][m])
+        print(" END WEIGHTS ")
         weights = self.backprop(nn, weights, 0)
-        for layer in nn:
-            print(layer)
-        print("################################")
-        for layer in weights:
-            print(layer)
         quit()
         pass
     
@@ -81,10 +88,6 @@ class AIPlayer(Player):
         # this just removes the string labels from the list of inputs and makes
         # [[str,float]] => [[float]]; slicing the 2d array didn't work for some reason
         # newins = []
-        # for item in ins:
-        #     newins.append([item[1]])
-        # ins = newins       
-        # print(ins)
 
         for i in range(len(nn)):
             if i == 0:
@@ -202,88 +205,154 @@ class AIPlayer(Player):
     #             error = calc_error(expected, input)
     #     return new_errors
 
-    def backward_propogate_error(self, network, weights, expected):
-        initial_error = self.calc_error(expected, 1)
-        for i in reversed(range(len(network))):
-            layer = network[i]
-            errors = []
-            if i != len(network) - 1: 
-                for j in range(len(layer)): 
-                    error = 0.0
-                    for neuron in network[i+1]: # for each neuron in the next layer 
-                        # get neuron input and neuron output
-                        # calc neuron delta
-                        # multiply each neuron weight by the neuron delta
-                        # sum the product to error
-                        print("") # calc error: error += (neuron['weights'][j] * neuron['delta'])
-                    errors.append(error)
-            else:
-                for j in range(len(layer)):
-                    neuron = layer[j]
-                    print("") # calc error: errors.append(expected[j] - neuron['output'])
-            for j in range(len((layer))):
-                neuron = layer[j]
-                # neuron['delta'] = errors[j] * transfer_derivative(neuron['output'])
+    # def backward_propogate_error(self, network, weights, expected):
+    #     initial_error = self.calc_error(expected, 1)
+    #     for i in reversed(range(len(network))):
+    #         layer = network[i]
+    #         errors = []
+    #         if i != len(network) - 1: 
+    #             for j in range(len(layer)): 
+    #                 error = 0.0
+    #                 for neuron in network[i+1]: # for each neuron in the next layer 
+    #                     # get neuron input and neuron output
+    #                     # calc neuron delta
+    #                     # multiply each neuron weight by the neuron delta
+    #                     # sum the product to error
+    #                     print("") # calc error: error += (neuron['weights'][j] * neuron['delta'])
+    #                 errors.append(error)
+    #         else:
+    #             for j in range(len(layer)):
+    #                 neuron = layer[j]
+    #                 print("") # calc error: errors.append(expected[j] - neuron['output'])
+    #         for j in range(len((layer))):
+    #             neuron = layer[j]
+    #             # neuron['delta'] = errors[j] * transfer_derivative(neuron['output'])
         
+    # def backprop(self, nn, weights, exp_out):
+    #     # print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    #     # print(len(nn))
+    #     # for layer in nn:
+    #     #     print(len(layer))
+    #     #     print(layer)
+    #     # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    #     # print(len(weights))
+    #     # for layer in weights:
+    #     #     print(len(layer))
+    #     #     print(layer)
+    #     # print("****************************")
+        
+    #     # these should be structured identically to the network itself, but only
+    #     # have one entry per node per layer
+    #     errors = []
+    #     deltas = []
+    #     d = 0 # delta iterator
+    #     for i in range(len(nn)-1,0,-1): # i will decrement from len(nn)-1 to 1
+    #         # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    #         # print(i)
+    #         # print(nn[i])
+    #         # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    #         if i == len(nn)-1:
+    #             err = 0 - nn[i][0][1] # step 3 from slides; the only error for the final output layer
+    #             out_node_delta = err * nn[i][0][1] * (1-nn[i][0][1]) # step 4 from slides
+    #             deltas.append([out_node_delta])
+    #             errors.append([err])
+    #             # errors.append(self.generate_layer_errors(weights[i], nn[i-1],nn[i],deltas[d])) # step 5 from slides
+    #         else:
+    #             print(weights[i])
+    #             print(nn[i-1])
+    #             print(nn[i])
+    #             print(deltas[d-1])
+    #             errs = self.generate_layer_errors(weights[i], nn[i-1], nn[i], deltas[d-1]) # step 5 from slides
+                
+    #             for e in range(len(errs)):
+    #                 deltas.append([errs[e] * nn[i][e][1] * (1-nn[i][e][1])])# step 6 from slides
+    #             errors.append(errs)
+    #         d+=1
+    #     new_adjusted_weights = self.adjust_weights(weights, deltas, nn)
+    #     return new_adjusted_weights
+
     def backprop(self, nn, weights, exp_out):
-        # print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-        # print(len(nn))
-        # for layer in nn:
-        #     print(len(layer))
-        #     print(layer)
-        # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        # print(len(weights))
-        # for layer in weights:
-        #     print(len(layer))
-        #     print(layer)
-        # print("****************************")
-        
-        # these should be structured identically to the network itself, but only
-        # have one entry per node per layer
         errors = []
         deltas = []
+        d = -1 # delta layer iterator, needs to start at -1 to iterate through the 0th layer on the 1st iteration of i
+        for i in range(len(nn)-1,-1,-1): # iterate through layers of nn
+            layer_errors = []
+            layer_deltas = []
+            if i == len(nn) -1: # case for the last layer of nodes (output layer)
+                for node in nn[i]:  # calculate error for each output node; step 3 in slides
+                    err = exp_out - node[1]
+                    layer_errors.append( err ) 
+                    layer_deltas.append(err * node[1] * (1-node[1]))
+            else: # case for non-output layer
+                for p in range(len(nn[i])): # iterate through nodes in currently examined [previous] layer
+                    err = 0
+                    for n in range(len(nn[i+1])): # examine nodes in next layer:
+                        err += weights[i][p][n] * deltas[d][n] 
+                    # once 
+                    delta = err * nn[i][p][1] * (1-nn[i][p][1])
+                    layer_errors.append(err)
+                    layer_deltas.append(delta)
+            d += 1
+            errors.append(layer_errors)
+            deltas.append(layer_deltas)
+        new_weights = self.adjust_weights(weights, deltas, nn)
+        return new_weights
 
-        for i in range(len(nn)-1,1,-1): # i will decrement from len(nn) -> 1
-            print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
-            print(i)
-            print(nn[i])
-            print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
-            if i == len(nn)-1:
-                err = 0 - nn[i][0][1] # step 3 from slides; the only error for the final output layer
-                out_node_delta = err * nn[i][0][1] * (1-nn[i][0][1]) # step 4 from slides
-                deltas.append([out_node_delta])
-                errors.append([err])
-                errors.append(self.generate_layer_errors(weights, nn[i-1],nn[i],deltas[i])) # step 5 from slides
-            else:
-                errs = self.generate_layer_errors(weights, nn[i-1], nn[i],deltas[i]) # step 5 from slides
-                node_deltas = []
-                for e in range(len(errs)):
-                    node_deltas.append(errs[e] * nn[i][e][1] * (1-nn[i][e][1]))# step 6 from slides
-                errors.append(errs)
-        new_adjusted_weights = self.adjust_weights(weights, deltas,nn)
-        return new_adjusted_weights
 
+
+    # def adjust_weights(self, weights, deltas, nn):
+    #     alpha = 0.25
+    #     for i in range(len(weights)):
+    #         for k in range(len(weights[i])):
+    #             asdfasdf = 0
+    #             weights[i][k] = weights[i][k] + alpha * deltas[i][k] * nn[i][k][1]
+    #     return weights
     def adjust_weights(self, weights, deltas, nn):
+        new_deltas = []
+        for layer in reversed(deltas):
+            new_deltas.append(layer)
+        deltas = new_deltas
         alpha = 0.25
-        for i in range(len(weights)):
-            for k in range(len(weights[i])):
-                weights[i][k] = weights[i][k] + alpha * deltas[i][k] * nn[i][k][1]
-        return weights
+        # for i in range(len(weights)):
+        #     for k in range(len(weights[i])):
+        #         print(weights[i][k])
+        #         print(nn[i][k][1])
+        #         print(deltas[i][k])
+        #         asdfasdf = 0
+        #         weights[i][k] = weights[i][k] + alpha * deltas[i][k] * nn[i][k][1]
+
+        # print(" **** WEIGHTS BEFORE ****")
+        # for layer in weights:
+        #     print(layer)
         
+        for i in range(len(nn)):
+            for k in range(len(nn[i])):
+                for m in range(len(weights[i][k])):
+                    print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
+                    weights[i][k][m] = weights[i][k][m] * deltas[i][k] * alpha * nn[i][k][0]
+        # print(" **** WEIGHTS AFTER ****")
+        # for layer in weights:
+        #     print(layer)
+        
+        return weights
 
     # generates errors from layer0 to layer1
-    def generate_layer_errors(self, weights, layer0, layer1, layer1_deltas): 
-        # layer1 should be after layer0 in forward propagation of the network
-        # layer0 should be a hidden or input layer
-        new_errors = []
-        for k in range(len(layer0)):
-            node_err = 0
-            for i in range(len(layer1)):
-                internode_weight = weights[k][i]
-                node_err =+ internode_weight * layer1_deltas[i][0]
-                # error = calc_error(expected, input)
-            new_errors.append(node_err)
-        return new_errors
+    # def generate_layer_errors(self, weights, layer0, layer1, layer1_deltas):
+    #     print("********************")
+    #     for layer in layer1:
+    #         print(layer)
+         
+    #     # layer1 should be after layer0 in forward propagation of the network
+    #     # layer0 should be a hidden or input layer
+    #     new_errors = []
+    #     for k in range(len(layer0)):
+    #         node_err = 0
+    #         for i in range(len(layer1)):
+    #             internode_weight = weights[k][i]
+    #             node_err += internode_weight * layer1_deltas[i]
+    #             # error = calc_error(expected, input)
+    #         new_errors.append(node_err)
+    #     return new_errors
 
 
     def calc_error(self, expected, actual):
@@ -292,9 +361,6 @@ class AIPlayer(Player):
     def calc_delta(self, input, output): # use this one; it's the one from the slides
         return (output * self.sigmoid_derivative(input))
         # err * (1 - x)
-
-    # def calc_delta(self, x): 
-    #     return self.sigmoid(x) * (1 - self.sigmoid(x))
 
     def adjust(self, weight, alpha, input, error):
         deriv = self.sigmoid_derivative(input)
@@ -600,7 +666,7 @@ class AIPlayer(Player):
         ins = self.init_nn_inputs(currentState)
         # print(self.create_NN(3, ins))
         self.run_NN(ins)
-        print("#############################")
+        # print("#############################")
         myState = currentState
         steps = 0
 
