@@ -66,19 +66,25 @@ class AIPlayer(Player):
         weights = self.create_weights(nn)
         bias_inputs_and_weights = self.init_all_biases(nn) 
         nn = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
-        print(" START NEURAL NETWORK ")
-        for i in range(len(nn)):
-            print("LAYER ", i)
-            print(nn[i])
-        print(" END NEURAL NETWORK ")
-        print(" START WEIGHTS  ")
-        for i in range(len(weights)):
-            print("LAYER ", i)
-            for k in range(len(weights[i])):
-                for m in range(len(weights[i][k])):
-                    print(" WEIGHT FROM NODE/INPUT ",k, " IN LAYER ", i, " TO NODE ", m, " IN LAYER ", i+1, " : ", weights[i][k][m])
+        # print(" START NEURAL NETWORK ")
+        # for i in range(len(nn)):
+        #     print("LAYER ", i)
+        #     print(nn[i])
+        # print(" END NEURAL NETWORK ")
+        # print(" START WEIGHTS  ")
+        # for i in range(len(weights)):
+        #     print("LAYER ", i)
+        #     for k in range(len(weights[i])):
+        #         for m in range(len(weights[i][k])):
+        #             print(" WEIGHT FROM NODE/INPUT ",k, " IN LAYER ", i, " TO NODE ", m, " IN LAYER ", i+1, " : ", weights[i][k][m])
         print(" END WEIGHTS ")
         weights = self.backprop(nn, weights, 0)
+        # print(" START WEIGHTS  ")
+        # for i in range(len(weights)):
+        #     print("LAYER ", i)
+        #     for k in range(len(weights[i])):
+        #         for m in range(len(weights[i][k])):
+        #             print(" WEIGHT FROM NODE/INPUT ",k, " IN LAYER ", i, " TO NODE ", m, " IN LAYER ", i+1, " : ", weights[i][k][m])
         quit()
         pass
     
@@ -326,10 +332,13 @@ class AIPlayer(Player):
         #     print(layer)
         
         for i in range(len(nn)):
-            for k in range(len(nn[i])):
-                for m in range(len(weights[i][k])):
-                    print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
-                    weights[i][k][m] = weights[i][k][m] * deltas[i][k] * alpha * nn[i][k][0]
+            for k in range(len(weights[i])):
+                for d in range(len(nn[i])):
+                    for m in range(len(weights[i][k])):
+                        # print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
+                        delta = deltas[i][d]
+                        w_sub_j = nn[i][d][0]
+                        weights[i][k][m] = weights[i][k][m] * delta * alpha * w_sub_j
         # print(" **** WEIGHTS AFTER ****")
         # for layer in weights:
         #     print(layer)
