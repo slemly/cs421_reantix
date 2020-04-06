@@ -210,7 +210,7 @@ class AIPlayer(Player):
                     error = 0.0
                     for neuron in network[i+1]: # for each neuron in the next layer 
                         # get neuron input and neuron output
-                        # calc neuron delta
+                        # use input and output to calc neuron delta
                         # multiply each neuron weight by the neuron delta
                         # sum the product to error
                         print("") # calc error: error += (neuron['weights'][j] * neuron['delta'])
