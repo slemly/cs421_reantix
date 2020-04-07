@@ -30,15 +30,7 @@ from AIPlayerUtils import *
 #   playerId - The id of the player.
 ##
 class AIPlayer(Player):
-
-    #__init__
-    #Description: Creates a new Player
-    #
-    #Parameters:
-    #   inputPlayerId - The id to give the new player (int)
-    #   cpy           - whether the player is a copy (when playing itself)
-    ##
-
+    # A helpful comment about the NN structure
     # network structure:
     # [
     # [ [,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,] ] #layer 1
@@ -57,71 +49,76 @@ class AIPlayer(Player):
     # so weight from layer 1 node 2 (nn[0][1][0]) to layer 2 node 5 (nn[1][4][0]) 
     # is accessed weights[0][1][4]
 
+
+
+
+    #__init__
+    #Description: Creates a new Player
+    #
+    #Parameters:
+    #   inputPlayerId - The id to give the new player (int)
+    #   cpy           - whether the player is a copy (when playing itself)
+    ##
     def __init__(self, inputPlayerId):
         super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
+        default_ins = 
+        self.nn = self.create
+        self.weights = []
+        self.bias_and_weights = []
 
     def run_NN(self, ins, weights, bias_inputs_and_weights, nn, expected_output):
-        # self.test_delta() #test
-        # nn = self.create_NN(2,ins)
-        # weights = self.create_weights(nn)
-        # bias_inputs_and_weights = self.init_all_biases(nn) 
         nn_after_forward = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
-        # print(" START NEURAL NETWORK ")
-        # for i in range(len(nn)):
-        #     print("LAYER ", i)
-        #     print(nn[i])
-        # print(" END NEURAL NETWORK ")
-        # print(" START WEIGHTS  ")
-        # for i in range(len(weights)):
-        #     print("LAYER ", i)
-        #     for k in range(len(weights[i])):
-        #         for m in range(len(weights[i][k])):
-        #             print(" WEIGHT FROM NODE/INPUT ",k, " IN LAYER ", i, " TO NODE ", m, " IN LAYER ", i+1, " : ", weights[i][k][m])
-        # print(" END WEIGHTS ")
-        adjusted_weights = self.backprop(nn, weights, expected_output)
-        return adjusted_weights
+        adjustments = self.backprop(nn, weights, expected_output, bias_inputs_and_weights)
+        # adjusted_weights = adjustments[0]
+        self.weights = adjustments[0]
+        # adjusted_biases = adjustments[1]
+        self.bias_and_weights = adjustments[1] 
+        # return adjusted_weights
+        return adjustments
 
     
     def train_NN(self, inputs, expected_output):
         expected_output = expected_output
-        train_amount = 10
-        nn = self.create_NN(2,inputs)
-        initial_weights = self.create_weights(nn)
-        bias_inputs_and_weights = self.init_all_biases(nn)
-        print("THIS IS INPUTS", inputs)
-        print("THIS IS THE BIAS INPUTS AND WEIGHTS", bias_inputs_and_weights)
+        train_amount = 1
+        self.nn = self.create_NN(2,inputs)
+        self.weights = self.create_weights(nn)
+        self.bias_and_weights = self.init_all_biases(nn)
+        # print("THIS IS INPUTS", inputs)
+        # print("THIS IS THE BIAS INPUTS AND WEIGHTS", bias_inputs_and_weights)
         print("training start")
         for i in range(train_amount):
-            initial_weights = self.run_NN(inputs, initial_weights, bias_inputs_and_weights, nn, expected_output)
+            adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
+            self.weights = adjustments[0]
+            self.bias_and_weights = adjustments[1]
             print("weights", initial_weights) 
             print("ith iteration", i )
             print("##########################################################################")
         print("training end")
-        quit()
 
-    def train(self, inputs, output):
-        ins = inputs
-        layers = 3
-        nn = self.create_NN(layers, ins)
-        initial_weights = 0
-        pass
-
+    # forward_prop
+    # parameters: 
+    # self - self
+    # ins - 2d input array
+    # weights - 2d weight array
+    # bias - 3d bias + weight array
+    # 
+    # returns - updated 3-d neural network with outputs in [1] slot of any given node 
     def foward_prop(self, ins, nn, weights, bias):
         toReturn = []
-        
-        # this just removes the string labels from the list of inputs and makes
-        # [[str,float]] => [[float]]; slicing the 2d array didn't work for some reason
-        # newins = []
-
         for i in range(len(nn)):
             if i == 0:
                 toReturn.append(self.generate_layer_output(ins, nn[i],weights[i],bias[i]))
             else:
                 toReturn.append(self.generate_layer_output(nn[i-1], nn[i], weights[i], bias[i]))
-        # for layer in toReturn:
-        #     print(layer)
-        return toReturn # returns a new nn
+        return toReturn
 
+    # create_NN()
+    # parameters:
+    # self - self
+    # layers - number of layers the NN will have
+    # inputList - a 2-d list of input parameters
+    #
+    # returns - empty 3-d neural network 
     def create_NN(self, layers, inputList):
         nn = []
         num_nodes_to_have = len(inputList)
@@ -230,98 +227,14 @@ class AIPlayer(Player):
     
     
     
-    # start backpropagation method family
+    # # start backpropagation method family # # 
 
-    # def backprop(self, nn, exp_out, weights):
-    #     new_weights = []
-    #     #calculates the error for the single output node. There's just one so we only need to do this once
-    #     error = self.calc_error(exp_out, nn[len(nn)-1][0][0])
-    #     final_node_delta = self.calc_delta(nn[len(nn)-1][0][0], error)
-    #     # print("error: ", error)
-    #     # print("final node delta: ", final_node_delta)
-    #     for i in range(len(nn)-1,1):
-    #         new_weights.append(generate_layer_errors(weights[i], nn[i-1], nn[i]))
-            
-    #     for layer in new_weights:
-    #         print(layer)
-    #     return new_weights
-        
-    # def generate_layer_errors(self, weights, layer0, layer1, expected): # generates errors from layer0 to layer1
-    #     new_errors = []
-    #     for k in range(len(layer0)):
-    #         for i in range(len(layer1)):
-    #             internode_weight = weights[i][k]
-    #             input = layer1[i]
-    #             error = calc_error(expected, input)
-    #     return new_errors
-
-    # def backward_propogate_error(self, network, weights, expected):
-    #     initial_error = self.calc_error(expected, 1)
-    #     for i in reversed(range(len(network))):
-    #         layer = network[i]
-    #         errors = []
-    #         if i != len(network) - 1: 
-    #             for j in range(len(layer)): 
-    #                 error = 0.0
-    #                 for neuron in network[i+1]: # for each neuron in the next layer 
-    #                     # get neuron input and neuron output
-    #                     # calc neuron delta
-    #                     # multiply each neuron weight by the neuron delta
-    #                     # sum the product to error
-    #                     print("") # calc error: error += (neuron['weights'][j] * neuron['delta'])
-    #                 errors.append(error)
-    #         else:
-    #             for j in range(len(layer)):
-    #                 neuron = layer[j]
-    #                 print("") # calc error: errors.append(expected[j] - neuron['output'])
-    #         for j in range(len((layer))):
-    #             neuron = layer[j]
-    #             # neuron['delta'] = errors[j] * transfer_derivative(neuron['output'])
-        
-    # def backprop(self, nn, weights, exp_out):
-    #     # print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-    #     # print(len(nn))
-    #     # for layer in nn:
-    #     #     print(len(layer))
-    #     #     print(layer)
-    #     # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-    #     # print(len(weights))
-    #     # for layer in weights:
-    #     #     print(len(layer))
-    #     #     print(layer)
-    #     # print("****************************")
-        
-    #     # these should be structured identically to the network itself, but only
-    #     # have one entry per node per layer
-    #     errors = []
-    #     deltas = []
-    #     d = 0 # delta iterator
-    #     for i in range(len(nn)-1,0,-1): # i will decrement from len(nn)-1 to 1
-    #         # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    #         # print(i)
-    #         # print(nn[i])
-    #         # print("^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    #         if i == len(nn)-1:
-    #             err = 0 - nn[i][0][1] # step 3 from slides; the only error for the final output layer
-    #             out_node_delta = err * nn[i][0][1] * (1-nn[i][0][1]) # step 4 from slides
-    #             deltas.append([out_node_delta])
-    #             errors.append([err])
-    #             # errors.append(self.generate_layer_errors(weights[i], nn[i-1],nn[i],deltas[d])) # step 5 from slides
-    #         else:
-    #             print(weights[i])
-    #             print(nn[i-1])
-    #             print(nn[i])
-    #             print(deltas[d-1])
-    #             errs = self.generate_layer_errors(weights[i], nn[i-1], nn[i], deltas[d-1]) # step 5 from slides
-                
-    #             for e in range(len(errs)):
-    #                 deltas.append([errs[e] * nn[i][e][1] * (1-nn[i][e][1])])# step 6 from slides
-    #             errors.append(errs)
-    #         d+=1
-    #     new_adjusted_weights = self.adjust_weights(weights, deltas, nn)
-    #     return new_adjusted_weights
-
-    def backprop(self, nn, weights, exp_out):
+    # backprop(self, nn (3d array; nerual netwokrk), weights (2d array), exp_out (float), bias_and_weights(3d array))
+    #
+    # returns a tuple containing the following:
+    #   adjusted weights list
+    #   adjusted bias weights list, leaving all biases at zero
+    def backprop(self, nn, weights, exp_out, bias_and_weights):
         errors = []
         deltas = []
         d = -1 # delta layer iterator, needs to start at -1 to iterate through the 0th layer on the 1st iteration of i
@@ -338,18 +251,21 @@ class AIPlayer(Player):
                     err = 0
                     for n in range(len(nn[i+1])): # examine nodes in next layer:
                         err += weights[i][p][n] * deltas[d][n] 
-                    # once 
                     delta = err * nn[i][p][1] * (1-nn[i][p][1])
                     layer_errors.append(err)
                     layer_deltas.append(delta)
             d += 1
             errors.append(layer_errors)
             deltas.append(layer_deltas)
-        new_weights = self.adjust_weights(weights, deltas, nn)
-        return new_weights
+        new_weights_and_bias_weights = self.adjust_weights(weights, deltas, nn, bias_and_weights)
+        new_weights = new_weights_and_bias_weights[0]
+        new_biases = new_weights_and_bias_weights[1]
+        return (new_weights, new_biases)
 
-
-    def adjust_weights(self, weights, deltas, nn):
+    def adjust_weights(self, weights, deltas, nn, bias_and_weights):
+        # print("BIAS BEFORE **************************************************************************** ")
+        # print(bias_and_weights)
+        # print("****************************************************************************")
         new_deltas = []
         for layer in reversed(deltas):
             new_deltas.append(layer)
@@ -372,11 +288,15 @@ class AIPlayer(Player):
                 for m in range(len(weights[i][k])):
                     # print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
                     weights[i][k][m] = weights[i][k][m] + (deltas[i][k] * alpha * nn[i][k][0])
+                bias_and_weights[i][k][1] = bias_and_weights[i][k][1] + (deltas[i][k] * alpha * nn[i][k][0])
+        # print("BIAS AFTER *****************************************************************")
+        # print(bias_and_weights)
+        # print("****************************************************************************")
         # print(" **** WEIGHTS AFTER ****")
         # for layer in weights:
         #     print(layer)
         
-        return weights
+        return (weights, bias_and_weights)
 
     def calc_error(self, expected, actual):
         return expected - actual 
@@ -439,27 +359,22 @@ class AIPlayer(Player):
 
         # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
-            # steps -=1000
             to_return_list.append(["enemy workers?",0])
         else:
             to_return_list.append(["enemy worker?",1])
         if len(enemyWorkers) > 0:
-            # steps += 150
-            to_return_list.append(["enemy worker count",0.15])
+            to_return_list.append(["enemy worker count",1.5])
         else:
             to_return_list.append(["enemy worker count",0])
         if enemyQueen == None:
-            # steps -= 10000
             to_return_list.append(["enemy queen alive?",0])
         else:
             to_return_list.append(["enemy queen alive?",1])
         if len(myWorkers) < 1:
-            steps += 150
             to_return_list.append(["friendly workers alive?",0.15])
         else:
             to_return_list.append(["friendly workers alive?",0])
         if myQueen.health == 0:
-            steps += 999999999
             to_return_list.append(["friendly queen alive?",1])
         else:
             to_return_list.append(["friendly queen alive?",0])
@@ -549,16 +464,13 @@ class AIPlayer(Player):
                     stepsToWorker = stepsToReach(myState, soldier.coords, worker.coords) + 1
                     stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
                     if stepsToWorker <= stepsToHill:
-                        # steps += stepsToWorker
                         if stepsToWorker < bestattackDist:
                             bestattackDist = stepsToWorker
                     else: 
-                        # steps += stepsToHill
                         if stepsToHill < bestattackDist:
                             bestattackDist = stepsToHill
             else:
                 stepsToHill = stepsToReach(myState, soldier.coords, enemyHill.coords) + 1
-                # steps += stepsToHill
                 if stepsToHill < bestattackDist:
                     bestattackDist = stepsToHill
 
@@ -568,21 +480,13 @@ class AIPlayer(Player):
         # this is intended to keep an ant on the enemy hill if it happens to make its way there
         for ant in myAnts:
             if ant.coords == enemyHill.coords:
-                # steps = steps * 0.025
                 for element in to_return_list:
                     element[1] = element[1]*0.025
         if len(myWorkers) >= 2:
-            # steps *= 0.85
             for element in to_return_list:
                 element[1] = element[1]*0.85
-        # for element in to_return_list:
-        #     print(element)
-        # print(to_return_list)
+       
         return to_return_list
-
-
-
-
 
 
     ##
@@ -812,11 +716,13 @@ class AIPlayer(Player):
         if len(myWorkers) >= 2:
             steps *= 0.85
 
+        steps = steps / 100
         # trains the NN with the expected output
-        logged_exp_out = np.log(steps)
-        excepted_out = self.sigmoid(logged_exp_out)
-        print("THIS IS OUR EXPECTED OUTPUT: ", excepted_out)
-        self.train_NN(ins, excepted_out)
+        # logged_exp_out = np.log(steps)
+        # expected_out = self.sigmoid(logged_exp_out)
+        expected_out = self.sigmoid(steps)
+        print("THIS IS OUR EXPECTED OUTPUT: ", expected_out)
+        self.train_NN(ins, expected_out)
 
         return steps 
 
@@ -1010,11 +916,11 @@ if __name__ == "__main__":
 
 player = AIPlayer("ANNIE")
 def testForward():
-        ins = [['enemy worker?', 1], ['enemy worker count', 0.15], ['enemy queen alive?', 1], 
-        ['friendly workers alive?', 0], ['friendly queen alive?', 0], ['friendly queen on hill?', 0], 
-        ['friendly queen on food?', 0], ['friendly drone count', 0.04], ['friendly soldier count', 0.025], 
-        ['food distance calculation', 0.9090909090909091], ['best drone to enemy queen distance', 0.0], 
-        ['soldier to nearest enemy target distance', 0.0]]
+        ins = [['enemy worker?', 1], ['enemy worker count', 1], ['enemy queen alive?', 1], 
+        ['friendly workers alive?', 1], ['friendly queen alive?', 1], ['friendly queen on hill?', 1], 
+        ['friendly queen on food?', 1], ['friendly drone count', 1], ['friendly soldier count', 1], 
+        ['food distance calculation', 1], ['best drone to enemy queen distance', 1], 
+        ['soldier to nearest enemy target distance', 1]]
         nn = player.create_NN(1, ins)
         weights = player.init_1_weights(nn)
         print("weights", weights)
