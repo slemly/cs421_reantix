@@ -12,12 +12,12 @@ from AIPlayerUtils import *
 
 # CS421A AI
 # HW5 - NEURAL NETWORKS
+#
 # @Author Samuel Lemly
+#
 # @Author David Vargas
-# DUE 6 APR 2020
-
-
-
+# 
+# DUE 2020 APR 6
 
 
 ##
@@ -42,7 +42,8 @@ class AIPlayer(Player):
     # weight structure:
     # [
     # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 1
-    # [[1],[1],[1],[1],[1],[1],[1]] #layer 2
+    # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 2
+    # [[1],[1],[1],[1],[1],[1],[1]] #layer 
     # [ [] ] #layer 3
     # ]
     #
@@ -59,11 +60,13 @@ class AIPlayer(Player):
     #   inputPlayerId - The id to give the new player (int)
     #   cpy           - whether the player is a copy (when playing itself)
     ##
-    def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
-        # self.nn = self.create
-        self.weights = []
-        self.bias_and_weights = []
+    def __init__(self, inputPlayerId): 
+        super(AIPlayer,self).__init__(inputPlayerId, "ZERO")
+        # self.nn = self.create_NN(3, 12)
+        self.nn = self.create_NN_shell(3,12)
+        self.weights = self.create_weights(self.nn)
+        self.bias_and_weights = self.init_all_biases(self.nn)
+        self.ins = []
 
     def run_NN(self, ins, weights, bias_inputs_and_weights, nn, expected_output):
         nn_after_forward = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
@@ -75,24 +78,14 @@ class AIPlayer(Player):
         # return adjusted_weights
         return adjustments
 
-    
     def train_NN(self, inputs, expected_output):
         expected_output = expected_output
         train_amount = 1
         self.nn = self.create_NN(2,inputs)
-        self.weights = self.create_weights(nn)
-        self.bias_and_weights = self.init_all_biases(nn)
-        # print("THIS IS INPUTS", inputs)
-        # print("THIS IS THE BIAS INPUTS AND WEIGHTS", bias_inputs_and_weights)
-        print("training start")
-        for i in range(train_amount):
-            adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
-            self.weights = adjustments[0]
-            self.bias_and_weights = adjustments[1]
-            print("weights", initial_weights) 
-            print("ith iteration", i )
-            print("##########################################################################")
-        print("training end")
+        adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
+        self.weights = adjustments[0]
+        self.bias_and_weights = adjustments[1]
+
 
     # forward_prop
     # parameters: 
@@ -121,6 +114,22 @@ class AIPlayer(Player):
     def create_NN(self, layers, inputList):
         nn = []
         num_nodes_to_have = len(inputList)
+        # num_nodes_to_have = inputList
+        for i in range(layers):
+            if i == 0:
+                nn.append(self.create_layer(num_nodes_to_have))
+            else:
+                num_nodes_to_have = int(num_nodes_to_have * 0.66666)
+                nn.append(self.create_layer(num_nodes_to_have))
+            if len(nn[i]) == 1:
+                break
+        if nn[len(nn) - 1] != 1:    
+            nn.append([[]])
+        return nn
+    def create_NN_shell(self, layers, inputs):
+        nn = []
+        # num_nodes_to_have = len(inputList)
+        num_nodes_to_have = inputs
         for i in range(layers):
             if i == 0:
                 nn.append(self.create_layer(num_nodes_to_have))
@@ -166,6 +175,7 @@ class AIPlayer(Player):
         return toReturn
 
     def create_layer(self, num_elements):
+        # print(num_elements)
         toReturn = []
         for i in range(num_elements):
             toReturn.append([])
@@ -485,7 +495,7 @@ class AIPlayer(Player):
             for element in to_return_list:
                 element[1] = element[1]*0.85
        
-        return to_return_list
+        return to_return_list   
 
 
     ##
@@ -589,7 +599,7 @@ class AIPlayer(Player):
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        ins = self.init_nn_inputs(currentState)
+        state_inputs  = self.init_nn_inputs(currentState)
         # print(self.create_NN(3, ins))
         # self.run_NN(ins)
         # print("#############################")
@@ -604,8 +614,6 @@ class AIPlayer(Player):
         tunnels = getConstrList(myState, types = (TUNNEL,))
         hills = getConstrList(myState, types = (ANTHILL,))
         allFoods = getConstrList(myState, None, (FOOD,))
-
-
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
         myFoodCount = myInv.foodCount
@@ -631,7 +639,6 @@ class AIPlayer(Player):
         foodDist = 9999999
         foodTurns = 0
         isTunnel = False
-
         # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             steps -=1000
@@ -656,7 +663,6 @@ class AIPlayer(Player):
             steps += 20
         if len(mySoldiers) < 1:
             steps += 25
-        
         # iteration through worker array to 
         for worker in myWorkers: 
             if worker.carrying: #worker has food; go to the hill
@@ -694,7 +700,6 @@ class AIPlayer(Player):
                 attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
             steps += attackDist
                 
-
         # # Target enemy workers with soldiers, then move to the anthill
         for soldier in mySoldiers:
             if len(enemyWorkers) > 0:
@@ -716,13 +721,8 @@ class AIPlayer(Player):
             steps *= 0.85
 
         steps = steps / 100
-        # trains the NN with the expected output
-        # logged_exp_out = np.log(steps)
-        # expected_out = self.sigmoid(logged_exp_out)
         expected_out = self.sigmoid(steps)
-        print("THIS IS OUR EXPECTED OUTPUT: ", expected_out)
-        self.train_NN(ins, expected_out)
-
+        self.ins.append([state_inputs, myState, expected_out])
         return steps 
 
 
@@ -744,6 +744,10 @@ class AIPlayer(Player):
     #
     def registerWin(self, hasWon):
         #method templaste, not implemented
+        random.shuffle(self.ins)
+        for state in self.ins:
+            self.train_NN(state[0],state[2])
+        
         pass
 
 
@@ -838,95 +842,3 @@ class MoveNode():
         self.parent = None
         self.evalOfState = evalOfState
 
-# testing!!
-
-# get a game state with some food and a worker on the tunnel (thanks Joanna!)
-def getGameState():
-    state = GameState.getBasicState()
-    #my setup
-    playerInventory = state.inventories[state.whoseTurn]
-    playerInventory.constrs.append(Construction((1, 1), FOOD))
-    playerTunnel = playerInventory.getTunnels()[0].coords
-    playerInventory.ants.append(Ant(playerTunnel, WORKER, state.whoseTurn))
-
-    #enemy setup
-    enemyInventory = state.inventories[1 - state.whoseTurn]
-    enemyInventory.constrs.append(Construction((2, 2), FOOD))
-    enemyInventory.constrs.append(Construction((8, 8), FOOD))
-    enemyInventory.constrs.append(Construction((6, 6), FOOD))
-    enemyTunnel = enemyInventory.getTunnels()[0].coords
-    enemyInventory.ants.append(Ant(enemyTunnel, WORKER, 1 - state.whoseTurn))
-
-    #inv setup
-    state.inventories[2].constrs = playerInventory.constrs + enemyInventory.constrs
-    state.inventories[2].ants = playerInventory.ants + enemyInventory.ants
-
-    return state
-
-
-# make a simple game state to test scores
-def heuristicStepsToGoalTest():
-    # get game state
-    state = getGameState()
-    myAnt = Ant((0, 6), WORKER, 0)
-    enemyAnt = Ant((0, 3), WORKER, 1)
-    state.inventories[state.whoseTurn].ants.append(myAnt)
-    state.inventories[1 - state.whoseTurn].ants.append(enemyAnt)
-    #making sure our heuristic score is a reasonable number
-    score = 100
-    testScore = heuristicStepsToGoal(state)
-    if (score > testScore):
-        print("Heuristic is too high")
-    if (testScore == 0):
-        print("Where's my score?")
-
-# make a move to test getMove()
-def getMoveTest():
-    state = getGameState()
-    player = AIPlayer(0)
-    playerMove = player.getMove(state)
-    move = Move(MOVE_ANT, [(8, 0), (7, 0), (7, 1)], None)
-    if move.coordList != playerMove.coordList:
-        print("Coordinates not the same")
-    if move.moveType != playerMove.moveType:
-        print("Move type not the same")
-
-# make nodes and moves to test bestmove()
-def bestMoveTest():
-    #first move (high cost)
-    state = getGameState()
-    move1 = Move(None, None, None)
-    node1 = SearchNode(move1, state, None)
-    node1.evaluation = 99999
-
-    #second move (low cost)
-    move2 = Move(None, None, None)
-    node2 = SearchNode(move2, state, None)
-    node2.evaluation = 1
-    myMove = bestMove([node1, node2])
-
-    if myMove is not move2:
-        print("Best Move is not the best move")
-
-if __name__ == "__main__":
-    getMoveTest()
-    bestMoveTest()
-    heuristicStepsToGoalTest()
-
-player = AIPlayer("ANNIE")
-def testForward():
-        ins = [['enemy worker?', 1], ['enemy worker count', 1], ['enemy queen alive?', 1], 
-        ['friendly workers alive?', 1], ['friendly queen alive?', 1], ['friendly queen on hill?', 1], 
-        ['friendly queen on food?', 1], ['friendly drone count', 1], ['friendly soldier count', 1], 
-        ['food distance calculation', 1], ['best drone to enemy queen distance', 1], 
-        ['soldier to nearest enemy target distance', 1]]
-        nn = player.create_NN(1, ins)
-        weights = player.init_1_weights(nn)
-        print("weights", weights)
-        bias = player.init_all_biases_to_be_1(nn)
-        print("biases", bias)
-        newNN = player.foward_prop(ins, nn, weights, bias)
-        print("newNN", newNN)
-        print("testForward completed")
-
-testForward()
