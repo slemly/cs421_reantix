@@ -60,7 +60,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "ANNIE")
+        super(AIPlayer,self).__init__(inputPlayerId, "NERO")
         # self.nn = self.create
         self.weights = []
         self.bias_and_weights = []

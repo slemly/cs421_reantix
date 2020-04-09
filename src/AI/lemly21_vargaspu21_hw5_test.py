@@ -62,7 +62,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId): 
-        super(AIPlayer,self).__init__(inputPlayerId, "ZERO")
+        super(AIPlayer,self).__init__(inputPlayerId, "OCTAVIAN")
         # self.nn = self.create_NN(3, 12)
         self.nn = self.create_NN_shell(3,12)
         self.weights = self.create_weights(self.nn)

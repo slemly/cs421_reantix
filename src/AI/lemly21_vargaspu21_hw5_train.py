@@ -64,7 +64,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId): 
-        super(AIPlayer,self).__init__(inputPlayerId, "ZERO")
+        super(AIPlayer,self).__init__(inputPlayerId, "CALIGULA")
         # self.nn = self.create_NN(3, 12)
         self.nn = self.create_NN_shell(3,12)
         self.weights = self.create_weights(self.nn)
@@ -768,8 +768,8 @@ class AIPlayer(Player):
 
 
         # f = open("/Users/davidvargas/Desktop/weights2.txt", "a+")
-        self.gameCounter = self.gameCounter + 1
-        if gameCounter >= GAMELIM:
+        self.gameCounter += 1
+        if self.gameCounter >= GAMELIM:
             f = open(os.path.join(os.getcwd(),"weights.csv"))
             f.write("AFTER ")
             for layer in self.weights:
