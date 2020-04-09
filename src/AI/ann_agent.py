@@ -929,4 +929,4 @@ def testForward():
         print("newNN", newNN)
         print("testForward completed")
 
-testForward()
+# testForward()
