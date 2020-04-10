@@ -18,8 +18,10 @@ import os
 #
 # @Author David Vargas
 # 
-# DUE 2020 APR 6
-
+# 
+# This agent is our training agent, and adjusts its weights when it finishes games.
+# Most of this code is similar to the testing agent.
+# #
 
 ##
 #AIPlayer
@@ -33,7 +35,7 @@ import os
 GAMELIM = 10
 
 class AIPlayer(Player):
-    # A helpful comment about the NN structure
+    # # #               ~~ A helpful comment about the structures used ~~ 
     # network structure:
     # [
     # [ [,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,] ] #layer 1
@@ -64,7 +66,7 @@ class AIPlayer(Player):
     #   cpy           - whether the player is a copy (when playing itself)
     ##
     def __init__(self, inputPlayerId): 
-        super(AIPlayer,self).__init__(inputPlayerId, "CALIGULA")
+        super(AIPlayer,self).__init__(inputPlayerId, "NERO")
         
         self.nn = self.create_NN_shell(3,12)
         self.weights = self.create_weights(self.nn)
@@ -95,8 +97,9 @@ class AIPlayer(Player):
 
     # train_NN() - driver method for run_NN
     #   inputs - 2d array of inputs
-    #   expected output
-    #
+    #   expected_output - expected output of the neural network given the input.
+    #  
+    #   Void method; no data returned
     #
     def train_NN(self, inputs, expected_output):
         expected_output = expected_output
@@ -242,21 +245,6 @@ class AIPlayer(Player):
         #at this point the nodelist's entries all have the sigmoid func applied to them
         return nodeList
 
-    def sigmoid(self, x):
-        #applying the sigmoid function
-        return 1 / (1 + np.exp(-x))
-
-    def sigmoid_derivative(self, x):
-        #computing derivative to the Sigmoid function
-        return x * (1 - x)
-
-    def test_delta(self):
-        # forcing conditions from the powerpoint for testing purposes
-        err = -0.4101
-        print("test1", self.calc_delta(0.4101, err))
-    
-    
-    
     # # start backpropagation method family # # 
 
     # backprop(self, nn (3d array; nerual netwokrk), weights (2d array), exp_out (float), bias_and_weights(3d array))
@@ -292,45 +280,63 @@ class AIPlayer(Player):
         new_biases = new_weights_and_bias_weights[1]
         return (new_weights, new_biases)
 
+    ##
+    # adjust_weights()   
+    # This method applies the learning rule to the neural network, and adjusts weights accordingly.
+    # inputs:
+    #   weights - class-associated 3-d array of weights from inputs to layer 1, then layer 1 to layer n 
+    #   deltas - class-associated array identical in shape to the NN, 
+    #                           but instead of nodes themselves, contains delta value for each node
+    #   nn - class-associated neural network skeleton with all input-output values filled in 
+    #   biases and weights - class-associated 
+    #   
+    # #
     def adjust_weights(self, weights, deltas, nn, bias_and_weights):
-        # print("BIAS BEFORE **************************************************************************** ")
-        # print(bias_and_weights)
-        # print("****************************************************************************")
         new_deltas = []
         for layer in reversed(deltas):
             new_deltas.append(layer)
         deltas = new_deltas
-        alpha = 0.05
-        
-        
+        alpha = 0.5
         for i in range(len(nn)):
             for k in range(len(nn[i])):
                 for m in range(len(weights[i][k])):
-                    # print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
                     weights[i][k][m] = weights[i][k][m] + (deltas[i][k] * alpha * nn[i][k][0])
                 bias_and_weights[i][k][1] = bias_and_weights[i][k][1] + (deltas[i][k] * alpha * nn[i][k][0])
-        
-        
         return (weights, bias_and_weights)
 
+    # error calculation method for a given node's expected output and actual output
     def calc_error(self, expected, actual):
         return expected - actual 
 
+    # delta calculation method for a given node's input and output
     def calc_delta(self, input, output): # use this one; it's the one from the slides
         return (output * self.sigmoid_derivative(input))
-        # err * (1 - x)
+                # err * (1 - x)
 
-    def adjust(self, weight, alpha, input, error):
-        deriv = self.sigmoid_derivative(input)
-        return  weight + (alpha * error * deriv* input)
+    # some math input methods and a testing method
+    def sigmoid(self, x):
+        #applying the sigmoid function
+        return 1 / (1 + np.exp(-x))
+
+    def sigmoid_derivative(self, x):
+        #computing derivative to the Sigmoid function
+        return x * (1 - x)
+
+    def test_delta(self):
+        # forcing conditions from the powerpoint for testing purposes
+        err = -0.4101
+        print("test1", self.calc_delta(0.4101, err))
+
 
     # end backpropagation method family
 
 
 
 
-
-    # uses heuristic to create inputs to NN from a given state
+    # init_nn_inputs
+    # uses heuristic to create inputs to NN from a given state.
+    # this is essentially our mapping function
+    #
     def init_nn_inputs(self, currentState):
         to_return_list = []
         myState = currentState
@@ -598,19 +604,12 @@ class AIPlayer(Player):
         #don't care, attack any enemy
         return enemyLocations[0]
 
-    # replaces heuresticStepsToGoal
-    def NN(self, currentState):
-        state_inputs  = self.init_nn_inputs(currentState)
-        nn = self.create_NN(2,state_inputs)
-        w = [[[2.845854114296556, 2.8879359745454773, 1.2491603056537524, 2.387265304811802, 1.4657482640602026, 1.3374788879691344, 1.8498585920017738, 1.4382632152356087, 2.754275004122002, 1.8982005592456817, 2.051198418058452, 2.177938406222343], [2.9039572742858706, 3.0840496952172014, 4.384751468137881, 3.555423196366327, 2.874282487713608, 3.309195192661716, 2.8949712889388968, 4.058676231308348, 3.7055390322767074, 3.9484656224907857, 4.580954331186985, 4.634294809649552], [-3.6678047780242458, -3.30028409767001, -2.9767311144358968, -3.0974125962940104, -3.429672875028237, -2.645967500945981, -3.82986054862249, -3.3273458079686233, -3.297031235709929, -3.9076032315695275, -2.6720661406780155, -3.2729698457972343], [-3.358191555514324, -1.7165042221156344, -2.6338220059378337, -2.4866213622997293, -2.329944735933256, -1.8284757647325014, -2.839829399416688, -2.3487298060068893, -2.27320905849082, -3.4895457516004864, -2.2147518439790597, -2.5354289637531675], [-4.063080873143101, -4.091208907523174, -2.6947584425897375, -3.0521918460106, -3.1467584412541623, -3.243278902922653, -3.615875386341262, -3.6320194491363065, -4.202343705893218, -2.950263479693106, -3.7407273584694636, -3.059608282088134], [-2.7067286917192246, -3.224333972302294, -2.5861813822584865, -2.6453495077939517, -2.1316483453484776, -2.0090387423141354, -1.9223444105952858, -2.3411103457898075, -2.69129371184991, -1.7030470770592678, -2.9683011545109914, -2.3279597438854887], [3.342513882840744, 2.388900850424119, 3.755000120507865, 4.213334050473824, 3.2245880734785493, 3.2434103275533896, 2.695739661981362, 3.3191381043893005, 3.911744626617984, 3.2565330700852204, 2.6560651918338802, 4.085766367462947], [-3.4050844155886026, -4.749128544375184, -3.276601673015175, -5.076876248206174, -3.62118551485602, -3.282742965508349, -3.1321136343805773, -3.546762331916424, -4.99526244627692, -4.647462177075335, -4.427739489415773, -3.25020848263681], [2.821607204761467, 2.869680439346103, 3.336079586537878, 3.3642112858999744, 2.490200872498039, 1.7234570240654274, 2.299734563542906, 2.332792673533156, 3.067226053694268, 2.3437953932937647, 2.8632691077967007, 1.9967268046471378], [-4.377784436795733, -3.3655861065642094, -3.019221915058356, -3.8989330773907187, -2.732899140269822, -3.6237534467179504, -2.877249763993799, -3.514264142977388, -3.531656113005994, -4.3454334042089515, -4.364564083646678, -3.8241592195272274], [-2.0272682473372194, -1.3383084611935623, -1.521184725529309, -2.070133724416078, -1.1563850712954238, -0.8172224570086111, -2.1563846152404667, -0.6657055555649913, -1.2745175846300922, -1.1687736270534523, -0.8728421607760082, -1.325028786834833], [3.604087086530403, 2.9231447705459495, 3.5758286809517505, 3.223014758772056, 3.510535617269408, 2.587845023792914, 3.648539548989161, 3.765084288872676, 3.1262905750780785, 3.3641124952343775, 3.902578972678617, 2.654341284600566]], [[0.9854711865802165, 0.1477123590959391, 1.2644898840458916, -0.2568182174407253, 0.5390536401248477, 0.7344257126764829, -0.1483455186487789], [-0.46158146867532035, 1.093332489907007, -0.6023730710595385, -0.6599595201162156, 0.042960135336120156, 0.2642457101647563, -0.43434374085060934], [0.8888859930586046, 0.5299138933537932, 0.5523303612232011, -0.39392950630133106, 1.0212857692439439, 0.9918157031457346, -0.7263583486485337], [3.4548657342533953, 3.1019531133549196, 3.4238338832995265, 2.1446627256980535, 2.17205802803073, 2.7351259474932896, 3.3106613038062593], [-5.929678172094801, -4.972857160905856, -5.2750422486094175, -4.8819565592799, -5.579996196754144, -4.37882619206593, -5.8710137655067625], [-0.9460731244396572, 0.30298817424094604, -1.6354418644026811, 0.2706846511817188, 0.11218888167784664, -0.45365623894080664, -0.16558453343698423], [-5.384013109092956, -5.619859167562657, -4.1240122038553055, -5.4959862910981085, -4.911953881696438, -4.448636250733699, -5.530540194173066], [0.7719926121901719, -0.13231762049645224, -0.22018213610820236, -0.46009954517591245, -0.22673906764613538, 0.023339069950817803, -0.6312219429223862], [-0.7866940784272174, 0.19242902376164306, -0.23325493620689097, -0.7981564542014408, 0.5338935360122539, -0.5229090446807045, 0.34348879131704346], [-0.08195868468995271, 0.6781407881101567, -0.01613861855505272, -0.2704985815533909, -0.5245778722559673, 0.11223565280732184, 0.36736035879014506], [-0.13022911035442664, -0.8078114484673935, -0.863144139249733, -0.7659427355707931, -0.8367804285402607, 0.15142941410011446, -0.978119110598985], [-0.43639729934961413, 0.05011242021636919, 0.980777806952474, 0.00979594698178432, 0.24396089687549116, 0.3655324880277997, 0.49632536872232325]], [[-11.307604464542004, -11.010710382596613, -10.956325111669717, -12.289013956356115], [0.7236185860033164, 0.43030592470442275, -0.6615776707303866, -0.7561955906846285], [0.9267252471793244, -0.35224317480121536, -0.4441806649507707, -0.7867030747127708], [-0.456000061452112, -0.9408206351878452, 0.6754028667844385, -0.22649418610466854], [0.8163728760358717, -0.5615089955824437, 0.8233825586233996, 0.6311712174367867], [0.2695096516541031, 0.5161644266469296, -0.08697720694158484, 0.5626702407928543], [0.5191101946577661, 0.32690565523359694, -0.17003797345170324, 0.2986327440621912]], [[0.6282623426244263], [0.7048090002974767], [0.7331961987741606], [-0.24359899760142634]]]
-        bw = [[[1, 3.1318483054715314], [1, 2.998373750946908], [1, -2.836654051063978], [1, -3.2911130985729464], [1, -3.1125157707798374], [1, -2.847047685689112], [1, 2.8324575677452817], [1, -3.6448510186281653], [1, 2.877770154315306], [1, -2.5288740799960463], [1, -0.8987847112717299], [1, 3.20537095647315]], [[1, 1.077553742762016], [1, 0.5320974470979166], [1, 0.25643410912081926], [1, 2.836361599153413], [1, -5.403466601428906], [1, -1.136980975643564], [1, -4.683804699360479]], [[1, -11.49964740573119], [1, 0.48103606949130806], [1, 0.34403531135432597], [1, -0.06478210661185568]], [[1, -0.4718938935616539]]]
-        nn_after_forward = self.foward_prop(state_inputs, nn, w, bw)
-        output = nn_after_forward[2][0][1]
-        print("output", output)
-        return output
+    
     ##
-    #
+    #heuristicStepsToGoal()
+    # inputs - currentstate - a gamestate object 
     # 
+    # returns - a value based on the heuristic analysis of that state
     ##
     def heuristicStepsToGoal(self, currentState):
         state_inputs  = self.init_nn_inputs(currentState)
@@ -860,8 +859,6 @@ class AIPlayer(Player):
                                 # If attacked an ant already don't attack any more
                                 break
         return myGameState
-
-
 
 # node object containing relevant data for a potential move. 
 # Parent and depth are not relevant for part A, so we left them as None and 0
