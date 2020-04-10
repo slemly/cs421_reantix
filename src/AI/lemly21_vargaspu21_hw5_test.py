@@ -340,7 +340,8 @@ class AIPlayer(Player):
         print("test1", self.calc_delta(0.4101, err))
 
     # The "thinking" method.
-    # inputs 
+    # inputs - current state of the game as a gamestate object
+    # outputs -   
     def NN(self, currentState):
         # state_inputs  = self.init_nn_inputs(currentState)
         self.ins = self.init_nn_inputs(currentState)
@@ -836,28 +837,9 @@ class AIPlayer(Player):
     ##
     #registerWin
     #
-    # This agent doens't learn
+    # This agent doesn't learn
     #
     def registerWin(self, hasWon):
-        # #method templaste, not implemented
-        # random.shuffle(self.ins)
-        # for state in self.ins:
-        #     self.train_NN(state[0],state[2])
-
-
-        # # f = open("/Users/davidvargas/Desktop/weights2.txt", "a+")
-        # self.gameCounter = self.gameCounter + 1
-        # if gameCounter >= 10:
-        #     f = open(os.path.join(os.getcwd(),"weights.csv"))
-        
-        # print("count", self.gameCounter)
-        # f.write("GAME "+ str(self.gameCounter)+" ---------------------------------------")
-        # f.write("SELF.WEIGHTS: "+str(self.weights))
-        # f.write("\n")
-        # f.write("SELF.BIAS_AND_WEIGHTS: "+str(self.bias_and_weights))
-        # f.write("\n")
-        # f.write("\n")
-        # f.close()
         pass
 
 
