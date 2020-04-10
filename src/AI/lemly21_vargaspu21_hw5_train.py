@@ -30,7 +30,7 @@ import os
 #Variables:
 #   playerId - The id of the player.
 ##
-GAMELIM = 10
+GAMELIM = 100
 
 class AIPlayer(Player):
     # A helpful comment about the NN structure
@@ -765,7 +765,6 @@ class AIPlayer(Player):
         random.shuffle(self.ins)
         for state in self.ins:
             self.train_NN(state[0],state[2])
-
 
         # f = open("/Users/davidvargas/Desktop/weights2.txt", "a+")
         self.gameCounter += 1
