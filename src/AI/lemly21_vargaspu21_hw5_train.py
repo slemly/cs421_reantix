@@ -30,7 +30,7 @@ import os
 #Variables:
 #   playerId - The id of the player.
 ##
-GAMELIM = 100
+GAMELIM = 10
 
 class AIPlayer(Player):
     # A helpful comment about the NN structure
@@ -65,31 +65,45 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId): 
         super(AIPlayer,self).__init__(inputPlayerId, "CALIGULA")
-        # self.nn = self.create_NN(3, 12)
+        
         self.nn = self.create_NN_shell(3,12)
         self.weights = self.create_weights(self.nn)
         self.bias_and_weights = self.init_all_biases(self.nn)
         self.ins = []
         self.gameCounter = 0
-        # f = open("/Users/davidvargas/Desktop/weights.txt", 'r+')
-        # f=open(os.path.join(os.getcwd(),"AI","weights.txt"))
-        # f.truncate(0)
 
-    def run_NN(self, ins, weights, bias_inputs_and_weights, nn, expected_output):
-        nn_after_forward = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
-        adjustments = self.backprop(nn, weights, expected_output, bias_inputs_and_weights)
+    #
+    #   run_NN()
+    #   
+    # Parameters:
+    #   ins - 2d input array
+    #   bias_inputs_and_weights - 3d array contiaining each node's bias and weight
+    #   nn - empty 3d NN skeleton
+    #   weights - 2d weight array
+    #   expected_output - expected output value for training purposes
+    # Returns:
+    # tuple containing modified weights for biases and all weights in network
+    def run_NN(self, ins, weights, bias_inputs_and_weights,nn, expected_output):
+        nn_after_forward = self.foward_prop(ins, nn, weights,\
+             bias_inputs_and_weights)
+        adjustments = self.backprop(nn_after_forward, weights, expected_output,\
+             bias_inputs_and_weights)
         # adjusted_weights = adjustments[0]
         self.weights = adjustments[0]
-        # adjusted_biases = adjustments[1]
         self.bias_and_weights = adjustments[1] 
-        # return adjusted_weights
         return adjustments
 
+    # train_NN() - driver method for run_NN
+    #   inputs - 2d array of inputs
+    #   expected output
+    #
+    #
     def train_NN(self, inputs, expected_output):
         expected_output = expected_output
         train_amount = 1
         self.nn = self.create_NN(2,inputs)
-        adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
+        adjustments = self.run_NN(inputs, self.weights,\
+            self.bias_and_weights, self.nn, expected_output)
         self.weights = adjustments[0]
         self.bias_and_weights = adjustments[1]
 
@@ -133,9 +147,10 @@ class AIPlayer(Player):
         if nn[len(nn) - 1] != 1:    
             nn.append([[]])
         return nn
+
+    
     def create_NN_shell(self, layers, inputs):
         nn = []
-        # num_nodes_to_have = len(inputList)
         num_nodes_to_have = inputs
         for i in range(layers):
             if i == 0:
@@ -214,7 +229,6 @@ class AIPlayer(Player):
 
     def generate_layer_output(self,inputList,nodeList, weights, bias):
         for n in range(0,len(nodeList)):
-
             inputSum = 0
             for i in range(len(inputList)):
                 inputSum += inputList[i][1] * weights[i][n]
@@ -287,17 +301,7 @@ class AIPlayer(Player):
             new_deltas.append(layer)
         deltas = new_deltas
         alpha = 0.05
-        # for i in range(len(weights)):
-        #     for k in range(len(weights[i])):
-        #         print(weights[i][k])
-        #         print(nn[i][k][1])
-        #         print(deltas[i][k])
-        #         asdfasdf = 0
-        #         weights[i][k] = weights[i][k] + alpha * deltas[i][k] * nn[i][k][1]
-
-        # print(" **** WEIGHTS BEFORE ****")
-        # for layer in weights:
-        #     print(layer)
+        
         
         for i in range(len(nn)):
             for k in range(len(nn[i])):
@@ -305,12 +309,7 @@ class AIPlayer(Player):
                     # print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
                     weights[i][k][m] = weights[i][k][m] + (deltas[i][k] * alpha * nn[i][k][0])
                 bias_and_weights[i][k][1] = bias_and_weights[i][k][1] + (deltas[i][k] * alpha * nn[i][k][0])
-        # print("BIAS AFTER *****************************************************************")
-        # print(bias_and_weights)
-        # print("****************************************************************************")
-        # print(" **** WEIGHTS AFTER ****")
-        # for layer in weights:
-        #     print(layer)
+        
         
         return (weights, bias_and_weights)
 
@@ -408,8 +407,6 @@ class AIPlayer(Player):
                 break
         if not queenOnFood:
             to_return_list.append(["friendly queen on food?",0])
-
-
         if len(myDrones) < 1:
             steps += 40
             to_return_list.append(["friendly drone count",0.04])
