@@ -770,10 +770,12 @@ class AIPlayer(Player):
         # f = open("/Users/davidvargas/Desktop/weights2.txt", "a+")
         self.gameCounter += 1
         if self.gameCounter >= GAMELIM:
-            f = open(os.path.join(os.getcwd(),"weights.csv"))
-            f.write("AFTER ")
+            f = open(os.path.join(os.getcwd(),"weights.csv"),"w")
+            f.write("AFTER 10 GAMES\n")
+            f.write("WEIGHTS:\n")
             for layer in self.weights:
                 f.write(str(layer))
+            f.write("BIASES AND THIER WEIGHTS:\n")
             for layer in self.bias_and_weights:
                 f.write(str(layer))
 
