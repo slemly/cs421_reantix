@@ -94,7 +94,7 @@ class AIPlayer(Player):
             if myQueen.coords == myHill.coords:
                 state_scores.append(0)
             else:
-                state_scores.append(1)
+                state_scores.append(1)    
             
             onHill = False
             for ant in myAnts:
@@ -150,7 +150,24 @@ class AIPlayer(Player):
             else:
                 state_scores.append(0)
             
+            # array is now length 10
 
+            my_food_count = myFoodCount
+            while(my_food_count > 0):
+                state_scores.append(1)
+                my_food_count -= 1
+
+            my_food_count = 11 - myFoodCount
+            while(my_food_count > 0):
+                state_scores.append(0)
+                my_food_count -= 1
+
+            # array is now length 21
+
+            if len(enemyWorkers) <= 0:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
 
 
             # f = open(os.path.exists(os.path.join(currdir,'curr_state.csv')), "w+")
