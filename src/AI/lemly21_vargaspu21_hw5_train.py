@@ -9,16 +9,19 @@ from Move import Move
 from GameState import *
 import numpy as np
 from AIPlayerUtils import *
+import os
 
 # CS421A AI
 # HW5 - NEURAL NETWORKS
+#
 # @Author Samuel Lemly
+#
 # @Author David Vargas
-# DUE 6 APR 2020
-
-
-
-
+# 
+# 
+# This agent is our training agent, and adjusts its weights when it finishes games.
+# Most of this code is similar to the testing agent.
+# #
 
 ##
 #AIPlayer
@@ -29,8 +32,10 @@ from AIPlayerUtils import *
 #Variables:
 #   playerId - The id of the player.
 ##
+GAMELIM = 10
+
 class AIPlayer(Player):
-    # A helpful comment about the NN structure
+    # # #               ~~ A helpful comment about the structures used ~~ 
     # network structure:
     # [
     # [ [,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,] ] #layer 1
@@ -42,7 +47,8 @@ class AIPlayer(Player):
     # weight structure:
     # [
     # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 1
-    # [[1],[1],[1],[1],[1],[1],[1]] #layer 2
+    # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 2
+    # [[1],[1],[1],[1],[1],[1],[1]] #layer 
     # [ [] ] #layer 3
     # ]
     #
@@ -59,40 +65,51 @@ class AIPlayer(Player):
     #   inputPlayerId - The id to give the new player (int)
     #   cpy           - whether the player is a copy (when playing itself)
     ##
-    def __init__(self, inputPlayerId):
+    def __init__(self, inputPlayerId): 
         super(AIPlayer,self).__init__(inputPlayerId, "NERO")
-        # self.nn = self.create
-        self.weights = []
-        self.bias_and_weights = []
+        
+        self.nn = self.create_NN_shell(3,12)
+        self.weights = self.create_weights(self.nn)
+        self.bias_and_weights = self.init_all_biases(self.nn)
+        self.ins = []
+        self.gameCounter = 0
 
-    def run_NN(self, ins, weights, bias_inputs_and_weights, nn, expected_output):
-        nn_after_forward = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
-        adjustments = self.backprop(nn, weights, expected_output, bias_inputs_and_weights)
+    #
+    #   run_NN()
+    #   
+    # Parameters:
+    #   ins - 2d input array
+    #   bias_inputs_and_weights - 3d array contiaining each node's bias and weight
+    #   nn - empty 3d NN skeleton
+    #   weights - 2d weight array
+    #   expected_output - expected output value for training purposes
+    # Returns:
+    # tuple containing modified weights for biases and all weights in network
+    def run_NN(self, ins, weights, bias_inputs_and_weights,nn, expected_output):
+        nn_after_forward = self.foward_prop(ins, nn, weights,\
+             bias_inputs_and_weights)
+        adjustments = self.backprop(nn_after_forward, weights, expected_output,\
+             bias_inputs_and_weights)
         # adjusted_weights = adjustments[0]
         self.weights = adjustments[0]
-        # adjusted_biases = adjustments[1]
         self.bias_and_weights = adjustments[1] 
-        # return adjusted_weights
         return adjustments
 
-    
+    # train_NN() - driver method for run_NN
+    #   inputs - 2d array of inputs
+    #   expected_output - expected output of the neural network given the input.
+    #  
+    #   Void method; no data returned
+    #
     def train_NN(self, inputs, expected_output):
         expected_output = expected_output
         train_amount = 1
         self.nn = self.create_NN(2,inputs)
-        self.weights = self.create_weights(nn)
-        self.bias_and_weights = self.init_all_biases(nn)
-        # print("THIS IS INPUTS", inputs)
-        # print("THIS IS THE BIAS INPUTS AND WEIGHTS", bias_inputs_and_weights)
-        print("training start")
-        for i in range(train_amount):
-            adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
-            self.weights = adjustments[0]
-            self.bias_and_weights = adjustments[1]
-            print("weights", initial_weights) 
-            print("ith iteration", i )
-            print("##########################################################################")
-        print("training end")
+        adjustments = self.run_NN(inputs, self.weights,\
+            self.bias_and_weights, self.nn, expected_output)
+        self.weights = adjustments[0]
+        self.bias_and_weights = adjustments[1]
+
 
     # forward_prop
     # parameters: 
@@ -121,6 +138,23 @@ class AIPlayer(Player):
     def create_NN(self, layers, inputList):
         nn = []
         num_nodes_to_have = len(inputList)
+        # num_nodes_to_have = inputList
+        for i in range(layers):
+            if i == 0:
+                nn.append(self.create_layer(num_nodes_to_have))
+            else:
+                num_nodes_to_have = int(num_nodes_to_have * 0.66666)
+                nn.append(self.create_layer(num_nodes_to_have))
+            if len(nn[i]) == 1:
+                break
+        if nn[len(nn) - 1] != 1:    
+            nn.append([[]])
+        return nn
+
+    
+    def create_NN_shell(self, layers, inputs):
+        nn = []
+        num_nodes_to_have = inputs
         for i in range(layers):
             if i == 0:
                 nn.append(self.create_layer(num_nodes_to_have))
@@ -166,6 +200,7 @@ class AIPlayer(Player):
         return toReturn
 
     def create_layer(self, num_elements):
+        # print(num_elements)
         toReturn = []
         for i in range(num_elements):
             toReturn.append([])
@@ -197,7 +232,6 @@ class AIPlayer(Player):
 
     def generate_layer_output(self,inputList,nodeList, weights, bias):
         for n in range(0,len(nodeList)):
-
             inputSum = 0
             for i in range(len(inputList)):
                 inputSum += inputList[i][1] * weights[i][n]
@@ -211,21 +245,6 @@ class AIPlayer(Player):
         #at this point the nodelist's entries all have the sigmoid func applied to them
         return nodeList
 
-    def sigmoid(self, x):
-        #applying the sigmoid function
-        return 1 / (1 + np.exp(-x))
-
-    def sigmoid_derivative(self, x):
-        #computing derivative to the Sigmoid function
-        return x * (1 - x)
-
-    def test_delta(self):
-        # forcing conditions from the powerpoint for testing purposes
-        err = -0.4101
-        print("test1", self.calc_delta(0.4101, err))
-    
-    
-    
     # # start backpropagation method family # # 
 
     # backprop(self, nn (3d array; nerual netwokrk), weights (2d array), exp_out (float), bias_and_weights(3d array))
@@ -261,60 +280,63 @@ class AIPlayer(Player):
         new_biases = new_weights_and_bias_weights[1]
         return (new_weights, new_biases)
 
+    ##
+    # adjust_weights()   
+    # This method applies the learning rule to the neural network, and adjusts weights accordingly.
+    # inputs:
+    #   weights - class-associated 3-d array of weights from inputs to layer 1, then layer 1 to layer n 
+    #   deltas - class-associated array identical in shape to the NN, 
+    #                           but instead of nodes themselves, contains delta value for each node
+    #   nn - class-associated neural network skeleton with all input-output values filled in 
+    #   biases and weights - class-associated 
+    #   
+    # #
     def adjust_weights(self, weights, deltas, nn, bias_and_weights):
-        # print("BIAS BEFORE **************************************************************************** ")
-        # print(bias_and_weights)
-        # print("****************************************************************************")
         new_deltas = []
         for layer in reversed(deltas):
             new_deltas.append(layer)
         deltas = new_deltas
-        alpha = 0.05
-        # for i in range(len(weights)):
-        #     for k in range(len(weights[i])):
-        #         print(weights[i][k])
-        #         print(nn[i][k][1])
-        #         print(deltas[i][k])
-        #         asdfasdf = 0
-        #         weights[i][k] = weights[i][k] + alpha * deltas[i][k] * nn[i][k][1]
-
-        # print(" **** WEIGHTS BEFORE ****")
-        # for layer in weights:
-        #     print(layer)
-        
+        alpha = 0.5
         for i in range(len(nn)):
             for k in range(len(nn[i])):
                 for m in range(len(weights[i][k])):
-                    # print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
                     weights[i][k][m] = weights[i][k][m] + (deltas[i][k] * alpha * nn[i][k][0])
                 bias_and_weights[i][k][1] = bias_and_weights[i][k][1] + (deltas[i][k] * alpha * nn[i][k][0])
-        # print("BIAS AFTER *****************************************************************")
-        # print(bias_and_weights)
-        # print("****************************************************************************")
-        # print(" **** WEIGHTS AFTER ****")
-        # for layer in weights:
-        #     print(layer)
-        
         return (weights, bias_and_weights)
 
+    # error calculation method for a given node's expected output and actual output
     def calc_error(self, expected, actual):
         return expected - actual 
 
+    # delta calculation method for a given node's input and output
     def calc_delta(self, input, output): # use this one; it's the one from the slides
         return (output * self.sigmoid_derivative(input))
-        # err * (1 - x)
+                # err * (1 - x)
 
-    def adjust(self, weight, alpha, input, error):
-        deriv = self.sigmoid_derivative(input)
-        return  weight + (alpha * error * deriv* input)
+    # some math input methods and a testing method
+    def sigmoid(self, x):
+        #applying the sigmoid function
+        return 1 / (1 + np.exp(-x))
+
+    def sigmoid_derivative(self, x):
+        #computing derivative to the Sigmoid function
+        return x * (1 - x)
+
+    def test_delta(self):
+        # forcing conditions from the powerpoint for testing purposes
+        err = -0.4101
+        print("test1", self.calc_delta(0.4101, err))
+
 
     # end backpropagation method family
 
 
 
 
-
-    # uses heuristic to create inputs to NN from a given state
+    # init_nn_inputs
+    # uses heuristic to create inputs to NN from a given state.
+    # this is essentially our mapping function
+    #
     def init_nn_inputs(self, currentState):
         to_return_list = []
         myState = currentState
@@ -391,8 +413,6 @@ class AIPlayer(Player):
                 break
         if not queenOnFood:
             to_return_list.append(["friendly queen on food?",0])
-
-
         if len(myDrones) < 1:
             steps += 40
             to_return_list.append(["friendly drone count",0.04])
@@ -485,7 +505,7 @@ class AIPlayer(Player):
             for element in to_return_list:
                 element[1] = element[1]*0.85
        
-        return to_return_list
+        return to_return_list   
 
 
     ##
@@ -584,12 +604,15 @@ class AIPlayer(Player):
         #don't care, attack any enemy
         return enemyLocations[0]
 
+    
     ##
-    #
+    #heuristicStepsToGoal()
+    # inputs - currentstate - a gamestate object 
     # 
+    # returns - a value based on the heuristic analysis of that state
     ##
     def heuristicStepsToGoal(self, currentState):
-        ins = self.init_nn_inputs(currentState)
+        state_inputs  = self.init_nn_inputs(currentState)
         # print(self.create_NN(3, ins))
         # self.run_NN(ins)
         # print("#############################")
@@ -604,8 +627,6 @@ class AIPlayer(Player):
         tunnels = getConstrList(myState, types = (TUNNEL,))
         hills = getConstrList(myState, types = (ANTHILL,))
         allFoods = getConstrList(myState, None, (FOOD,))
-
-
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
         myFoodCount = myInv.foodCount
@@ -631,7 +652,6 @@ class AIPlayer(Player):
         foodDist = 9999999
         foodTurns = 0
         isTunnel = False
-
         # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             steps -=1000
@@ -656,7 +676,6 @@ class AIPlayer(Player):
             steps += 20
         if len(mySoldiers) < 1:
             steps += 25
-        
         # iteration through worker array to 
         for worker in myWorkers: 
             if worker.carrying: #worker has food; go to the hill
@@ -694,7 +713,6 @@ class AIPlayer(Player):
                 attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
             steps += attackDist
                 
-
         # # Target enemy workers with soldiers, then move to the anthill
         for soldier in mySoldiers:
             if len(enemyWorkers) > 0:
@@ -716,13 +734,9 @@ class AIPlayer(Player):
             steps *= 0.85
 
         steps = steps / 100
-        # trains the NN with the expected output
-        # logged_exp_out = np.log(steps)
-        # expected_out = self.sigmoid(logged_exp_out)
         expected_out = self.sigmoid(steps)
-        print("THIS IS OUR EXPECTED OUTPUT: ", expected_out)
-        self.train_NN(ins, expected_out)
-
+        self.ins.append([state_inputs, myState, expected_out])
+        print("steps", steps)
         return steps 
 
 
@@ -744,6 +758,33 @@ class AIPlayer(Player):
     #
     def registerWin(self, hasWon):
         #method templaste, not implemented
+        random.shuffle(self.ins)
+        for state in self.ins:
+            self.train_NN(state[0],state[2])
+
+        # f = open("/Users/davidvargas/Desktop/weights2.txt", "a+")
+        self.gameCounter += 1
+        if self.gameCounter >= GAMELIM:
+            f = open(os.path.join(os.getcwd(),"weights.csv"),"w")
+            f.write("AFTER 10 GAMES\n")
+            f.write("WEIGHTS:\n")
+            for layer in self.weights:
+                f.write(str(layer))
+            f.write("BIASES AND THIER WEIGHTS:\n")
+            for layer in self.bias_and_weights:
+                f.write(str(layer))
+
+
+
+
+        # print("count", self.gameCounter)
+        # f.write("GAME "+ str(self.gameCounter)+" ---------------------------------------")
+        # f.write("SELF.WEIGHTS: "+str(self.weights))
+        # f.write("\n")
+        # f.write("SELF.BIAS_AND_WEIGHTS: "+str(self.bias_and_weights))
+        # f.write("\n")
+        # f.write("\n")
+        # f.close()
         pass
 
 
@@ -819,8 +860,6 @@ class AIPlayer(Player):
                                 break
         return myGameState
 
-
-
 # node object containing relevant data for a potential move. 
 # Parent and depth are not relevant for part A, so we left them as None and 0
 #input: currState - state object depicting current state
@@ -838,95 +877,3 @@ class MoveNode():
         self.parent = None
         self.evalOfState = evalOfState
 
-# testing!!
-
-# get a game state with some food and a worker on the tunnel (thanks Joanna!)
-def getGameState():
-    state = GameState.getBasicState()
-    #my setup
-    playerInventory = state.inventories[state.whoseTurn]
-    playerInventory.constrs.append(Construction((1, 1), FOOD))
-    playerTunnel = playerInventory.getTunnels()[0].coords
-    playerInventory.ants.append(Ant(playerTunnel, WORKER, state.whoseTurn))
-
-    #enemy setup
-    enemyInventory = state.inventories[1 - state.whoseTurn]
-    enemyInventory.constrs.append(Construction((2, 2), FOOD))
-    enemyInventory.constrs.append(Construction((8, 8), FOOD))
-    enemyInventory.constrs.append(Construction((6, 6), FOOD))
-    enemyTunnel = enemyInventory.getTunnels()[0].coords
-    enemyInventory.ants.append(Ant(enemyTunnel, WORKER, 1 - state.whoseTurn))
-
-    #inv setup
-    state.inventories[2].constrs = playerInventory.constrs + enemyInventory.constrs
-    state.inventories[2].ants = playerInventory.ants + enemyInventory.ants
-
-    return state
-
-
-# make a simple game state to test scores
-def heuristicStepsToGoalTest():
-    # get game state
-    state = getGameState()
-    myAnt = Ant((0, 6), WORKER, 0)
-    enemyAnt = Ant((0, 3), WORKER, 1)
-    state.inventories[state.whoseTurn].ants.append(myAnt)
-    state.inventories[1 - state.whoseTurn].ants.append(enemyAnt)
-    #making sure our heuristic score is a reasonable number
-    score = 100
-    testScore = heuristicStepsToGoal(state)
-    if (score > testScore):
-        print("Heuristic is too high")
-    if (testScore == 0):
-        print("Where's my score?")
-
-# make a move to test getMove()
-def getMoveTest():
-    state = getGameState()
-    player = AIPlayer(0)
-    playerMove = player.getMove(state)
-    move = Move(MOVE_ANT, [(8, 0), (7, 0), (7, 1)], None)
-    if move.coordList != playerMove.coordList:
-        print("Coordinates not the same")
-    if move.moveType != playerMove.moveType:
-        print("Move type not the same")
-
-# make nodes and moves to test bestmove()
-def bestMoveTest():
-    #first move (high cost)
-    state = getGameState()
-    move1 = Move(None, None, None)
-    node1 = SearchNode(move1, state, None)
-    node1.evaluation = 99999
-
-    #second move (low cost)
-    move2 = Move(None, None, None)
-    node2 = SearchNode(move2, state, None)
-    node2.evaluation = 1
-    myMove = bestMove([node1, node2])
-
-    if myMove is not move2:
-        print("Best Move is not the best move")
-
-if __name__ == "__main__":
-    getMoveTest()
-    bestMoveTest()
-    heuristicStepsToGoalTest()
-
-player = AIPlayer("ANNIE")
-def testForward():
-        ins = [['enemy worker?', 1], ['enemy worker count', 1], ['enemy queen alive?', 1], 
-        ['friendly workers alive?', 1], ['friendly queen alive?', 1], ['friendly queen on hill?', 1], 
-        ['friendly queen on food?', 1], ['friendly drone count', 1], ['friendly soldier count', 1], 
-        ['food distance calculation', 1], ['best drone to enemy queen distance', 1], 
-        ['soldier to nearest enemy target distance', 1]]
-        nn = player.create_NN(1, ins)
-        weights = player.init_1_weights(nn)
-        print("weights", weights)
-        bias = player.init_all_biases_to_be_1(nn)
-        print("biases", bias)
-        newNN = player.foward_prop(ins, nn, weights, bias)
-        print("newNN", newNN)
-        print("testForward completed")
-
-# testForward()

@@ -9,15 +9,16 @@ from Move import Move
 from GameState import *
 import numpy as np
 from AIPlayerUtils import *
+import os
 
 # CS421A AI
 # HW5 - NEURAL NETWORKS
+#
 # @Author Samuel Lemly
+#
 # @Author David Vargas
-# DUE 6 APR 2020
-
-
-
+# 
+# This agent is our testing agent, using weights from a network that has already been trained.
 
 
 ##
@@ -30,25 +31,27 @@ from AIPlayerUtils import *
 #   playerId - The id of the player.
 ##
 class AIPlayer(Player):
-    # A helpful comment about the NN structure
+
+    # # #               ~~ A helpful comment about the structures used ~~ 
+    #
     # network structure:
     # [
     # [ [,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,],[,] ] #layer 1
     #[[,],[,],[,],[,],[,],[,],[,]] #layer 2
     #[ [,] ] #layer 3
     # ]
-    # so output value at layer 2 node 4 is nn[1][3][1]
-
+    # So, output value at layer 2 node 4 is nn[1][3][1]
+    #
     # weight structure:
     # [
     # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 1
-    # [[1],[1],[1],[1],[1],[1],[1]] #layer 2
+    # [ [1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[1,2,3,4,5,6,7],[etc],[],[],[],[],[],[]] #layer 2
+    # [[1],[1],[1],[1],[1],[1],[1]] #layer 
     # [ [] ] #layer 3
     # ]
-    #
-    # so weight from layer 1 node 2 (nn[0][1][0]) to layer 2 node 5 (nn[1][4][0]) 
+    # So, weight from layer 1 node 2 (nn[0][1][0]) to layer 2 node 5 (nn[1][4][0]) 
     # is accessed weights[0][1][4]
-
+    # # #
 
 
 
@@ -59,40 +62,122 @@ class AIPlayer(Player):
     #   inputPlayerId - The id to give the new player (int)
     #   cpy           - whether the player is a copy (when playing itself)
     ##
-    def __init__(self, inputPlayerId):
-        super(AIPlayer,self).__init__(inputPlayerId, "NERO")
-        # self.nn = self.create
-        self.weights = []
-        self.bias_and_weights = []
+    def __init__(self, inputPlayerId): 
+        super(AIPlayer,self).__init__(inputPlayerId, "OCTAVIAN")
+        self.nn = self.create_NN_shell(3,12)
+        # hardcoded weights used for testing a learning cycle 
+        self.weights = [[[1.646180507444446, 1.5834001719308752, 0.16270475263870357, 1.1768288933228823,
+                         0.21684344088572807, -0.2621225596702182, 1.6062359157819392, 1.480141282732028, 
+                         1.2949859408915703, -0.2313900147878303, 0.19478839731271594, 1.3929599444171892], 
+                         [0.37560216643719135, -0.8578118239130483, 0.6651525290580538, -0.047382163385096064,
+                          0.9343423013955131, 0.20334194693677304, 0.6112684704683942, -0.4057244497088264, 
+                          0.08540851458705845, 0.8631664243602633, -0.8311396720503876, 0.8850799115968613], 
+                          [-0.7344669378396841, 0.3808038224469668, 0.8167488173352954, -0.2084804418134775, 
+                          -0.9078450973303461, 0.7619064235902527, -0.1586150727057041, -0.9025474167096236, 
+                          0.07694542333758919, 1.05720692471242, 0.35624373500241485, -0.6502511621474342], 
+                          [-0.7609359683324423, 0.9597058505402029, -0.4060025970998122, 0.46415096977594655, 
+                          0.8154118406223326, 0.8921670646578149, -0.1918444541096931, -0.2608282926826548, 
+                          1.0047416452946036, -0.4050626627219393, -0.29166197896713414, -0.3337688288374478], 
+                          [-0.6472693681880881, -0.8928849036043862, 0.46116422675448904, 0.07439045897489525, 
+                          -0.5118135550395679, 0.9699992617107425, -0.11701327688369308, -0.6884120717183062, 
+                          0.5038812315197169, -0.585550737741994, 0.8737378226701433, 0.15584020634974635], 
+                          [0.3718942863959596, -0.2134400639516978, -0.4974184352117413, 0.3881086339822429, 
+                          -0.014674977333494271, -0.8043851571056974, 0.07712725449108863, 0.5689802708761359, 
+                          0.760940141389668, -0.2858132279506344, 0.25507804933703065, -0.7974834706012944], 
+                          [-0.4979970710025038, -0.769648766756459, 0.4354513730348959, -1.2100088013692802, 
+                          -0.7486501544152121, 0.3020110903604033, -0.29878603472204435, -0.35741086188278426, 
+                          0.3166949787722637, -0.3729366527219301, -0.4441694350787464, -0.7229670634454995], 
+                          [-0.22908626830769538, 0.47656272252665116, 0.6926840541773897, 0.6731441461309432, 
+                          1.0037648119245508, -0.06355939020695685, 0.16161897785539445, 0.32965552220423383, 
+                          0.38950009823142967, -0.3683517366469135, 0.4778986911618293, 0.5684870389354787], 
+                          [-0.3499632552264868, -0.28337479859641745, 0.020980258404798353, 1.025544148691844, 
+                          -0.3478457574332012, 0.08115225357356366, 0.8016150378173953, -0.04054502732881164, 
+                          0.18831727044113947, 1.0938778522216128, -0.36526538333744824, 0.6594418016241804], 
+                          [-0.5704611960221951, -0.6692046296025479, 0.21499605256819734, 0.5030614785658443, 
+                          -0.17851765345360557, -0.6858984201915729, -0.31491631829100125, -0.2925322076606877, 
+                          0.896250924392399, -0.29126318007223734, 0.7973427160000067, -0.6147657461846882], 
+                          [-2.2868998554942905, -1.7343371943516213, -2.1582585020987555, -1.279690037959371, 
+                          -2.3549893868561957, -1.7361802233606491, -0.7363851063133574, -0.6060937009260968, 
+                          -1.8265892055547441, -1.3881661786211992, -2.2073419810617447, -1.6382539699936463], 
+                          [-0.4582861566887284, 0.2134625986412683, -1.1421689793596104, -0.823855716428089, 
+                          -0.2005115175262, -0.2335953504106811, -1.3894263904531317, 0.07785109160893101, 
+                          -0.9210629131656224, -0.9980419718010519, -1.298608162093741, 0.3701594039612082]],
+                          [[-1.0040187925457393, -0.768759247455467, -0.5420728854220198, -0.5923521632091959, 
+                          -0.5536967123071219, 0.6408683456205235, 0.03274059825635077], 
+                          [0.3757568199515289, -0.44665466044050617, 0.4317861933783797, 0.5197604599386955, 
+                          -0.7835102592031543, -0.04675102074553755, -1.0956132834665009], 
+                          [-1.0035010175229955, -0.9613360345849047, -0.4431017502985635, 0.5350376317757912, 
+                          0.5211430529275014, -1.0878242288575641, -0.7589853736634691], 
+                          [0.46456366175455915, -0.12399333057056401, -0.4958274735205811, 
+                          0.5728055678845743, -0.08257693834556304, -0.7090625779534652, -0.9360767952702627], 
+                          [-0.5924542739937648, -0.05649413967233168, -0.25685460108115515, -0.3654752120839682, 
+                          0.6169254299332432, -0.03996984574154002, 0.11734600989273056], 
+                          [-0.35375980638808346, -0.5993877022861616, 1.139919759655878, 0.8851680270995239, 
+                          -0.12540236626981321, -0.628626810140366, 0.5265083842440321], 
+                          [2.03354583034979, 1.9817445637093378, 2.3574913190712667, 0.9898480945775769, 
+                          1.4395109270513433, 1.1363380717044864, 1.5206740622448167], 
+                          [0.4232875981197204, -0.09003885989184846, 0.9520968440490853, 0.0761642259366564, 
+                          -0.3116973486686745, 0.8202269536816724, 0.5560393844184457], 
+                          [-0.8261321482574047, -0.07621568416860125, 0.33656094947348536, 
+                          -0.2225091596344515, -0.677964134614871, 0.8669208427839816, 0.5769063684800999], 
+                          [0.9261576224804908, -0.5507910064800119, 0.6095327217491437, -0.7616186942424175, 
+                          -0.5867627882002635, -0.374095400995506, -0.4993856888769612], 
+                          [-0.4804847139945483, 0.6018279154680846, 0.8162226491799403, 0.005658258161028051, 
+                          -0.6718327870891381, 0.5372196519010592, -0.04057718276517197], 
+                          [0.2918118209517071, -0.9513230345569275, -0.5380840394171695, 0.3823374281550431, 
+                          0.5760245323338575, -0.7289109249695189, 0.8078297020873761]],
+                          [[-6.657984363495299, -6.675758201109767, -6.295586637061486, -6.096470114060262], 
+                          [-0.28994203880483416, 0.9190659537983981, -0.9401616778275146, -0.40371882703683015], 
+                          [-0.08105964658945974, 0.06958464559071831, 0.8712136514910327, -0.6543851950799753], 
+                          [0.772801140517116, 0.06511039010897779, 0.8694595924972224, 0.2216961809805842], 
+                          [-0.1859315293041679, 0.039347904063172345, 0.23955075936065362, -0.7680284030419406], 
+                          [0.08111609902256878, 0.10446007351727427, -0.07710151415142374, -0.19093659818504305], 
+                          [-0.39845465455079165, 0.07998858946636034, -0.10691798471761715, -0.3171328668840643]],
+                          [[-0.6527332453158932], [-0.21856423156616267], [0.3373471548471445], [0.9433311715178867]]]
+        self.bias_and_weights = self.init_all_biases(self.nn)
+        # hardcoded biases and their weights used for testing a learning cycle
+        self.bias_and_weights = [[[1, 0.43952791763063476], [1, 0.8751154577924336], [1, 0.69875989449179], 
+        [1, 0.5680056195096582], [1, 0.8795910179233453], [1, 0.2045603982037143], [1, -0.8792654300407575], 
+        [1, -0.8550501242692073], [1, 0.16017827044990723], [1, 0.7853330375208821], [1, -0.721028515741847], 
+        [1, -0.42714802016711473]],[[1, 0.17118251543165175], [1, 0.4015196825259578], [1, 0.21757637659403636], 
+        [1, -0.27251002789772727], [1, -0.09681472576098826], [1, -0.09401304711784553], [1, 1.8999787351512758]],
+        [[1, -7.007694219153576], [1, -0.035648623330980955], [1, -0.5787340534629437], [1, -0.24678844069521322]],
+        [[1, 0.8328953467711064]]]
+        self.ins = []
+        self.gameCounter = 0
 
+    #
+    #   run_NN()
+    #   
+    # Parameters:
+    #   ins - 2d input array
+    #   bias_inputs_and_weights - 3d array contiaining each node's bias and weight
+    #   nn - empty 3d NN skeleton
+    #   weights - 2d weight array
+    #   expected_output - expected output value for training purposes
+    # Returns:
+    # tuple containing modified weights for biases and all weights in network
     def run_NN(self, ins, weights, bias_inputs_and_weights, nn, expected_output):
         nn_after_forward = self.foward_prop(ins, nn, weights, bias_inputs_and_weights)
         adjustments = self.backprop(nn, weights, expected_output, bias_inputs_and_weights)
-        # adjusted_weights = adjustments[0]
         self.weights = adjustments[0]
-        # adjusted_biases = adjustments[1]
         self.bias_and_weights = adjustments[1] 
-        # return adjusted_weights
         return adjustments
 
-    
+    # train_NN() - driver method for run_NN
+    #   inputs - 2d array of inputs
+    #   expected_output - expected output of the neural network given the input.
+    #  
+    #   Void method; no data returned
+    #   Not called in our testing agent.
     def train_NN(self, inputs, expected_output):
         expected_output = expected_output
         train_amount = 1
         self.nn = self.create_NN(2,inputs)
-        self.weights = self.create_weights(nn)
-        self.bias_and_weights = self.init_all_biases(nn)
-        # print("THIS IS INPUTS", inputs)
-        # print("THIS IS THE BIAS INPUTS AND WEIGHTS", bias_inputs_and_weights)
-        print("training start")
-        for i in range(train_amount):
-            adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
-            self.weights = adjustments[0]
-            self.bias_and_weights = adjustments[1]
-            print("weights", initial_weights) 
-            print("ith iteration", i )
-            print("##########################################################################")
-        print("training end")
+        adjustments = self.run_NN(inputs, self.weights, self.bias_and_weights, self.nn, expected_output)
+        self.weights = adjustments[0]
+        self.bias_and_weights = adjustments[1]
+
 
     # forward_prop
     # parameters: 
@@ -121,6 +206,29 @@ class AIPlayer(Player):
     def create_NN(self, layers, inputList):
         nn = []
         num_nodes_to_have = len(inputList)
+        # num_nodes_to_have = inputList
+        for i in range(layers):
+            if i == 0:
+                nn.append(self.create_layer(num_nodes_to_have))
+            else:
+                num_nodes_to_have = int(num_nodes_to_have * 0.66666)
+                nn.append(self.create_layer(num_nodes_to_have))
+            if len(nn[i]) == 1:
+                break
+        if nn[len(nn) - 1] != 1:    
+            nn.append([[]])
+        return nn
+    # create_NN()
+    # parameters:
+    # self - self
+    # layers - number of layers the NN will have
+    # inputs - a number of input parameters
+    #
+    # returns - empty 3-d neural network 
+    def create_NN_shell(self, layers, inputs):
+        nn = []
+        # num_nodes_to_have = len(inputList)
+        num_nodes_to_have = inputs
         for i in range(layers):
             if i == 0:
                 nn.append(self.create_layer(num_nodes_to_have))
@@ -133,6 +241,7 @@ class AIPlayer(Player):
             nn.append([[]])
         return nn
 
+    # sets a bias + weight skeleton based on a given neural network, returning that skeleton
     def init_all_biases(self, nn_skeleton):
         toReturn = []
         for layer in nn_skeleton:
@@ -142,7 +251,8 @@ class AIPlayer(Player):
             toReturn.append(row)
         return toReturn
 
-    def init_all_biases_to_be_1(self, nn_skeleton):
+    # Method that set all NN biases to be 1, used for testing purposes.
+    def init_all_biases_to_be_1(self, nn_skeleton): # for testing purposes, this is included
         toReturn = []
         for layer in nn_skeleton:
             row = []
@@ -151,6 +261,7 @@ class AIPlayer(Player):
             toReturn.append(row)
         return toReturn
 
+    # initializes pre-fowrwardpropagation input weights
     def create_weights(self, nn_skeleton):
         toReturn = []
         toReturn.append(self.init_weights_array(nn_skeleton[0], nn_skeleton[0])) # input -> layer 0 mapping
@@ -158,6 +269,7 @@ class AIPlayer(Player):
             toReturn.append(self.init_weights_array(nn_skeleton[i], nn_skeleton[i+1])) # layer i -> layer i+1 weight mapping
         return toReturn
 
+    # initializes pre-fowrwardpropagation input weights - a functional duplicate of create_weights we used for testing 
     def init_1_weights(self, nn_skeleton):
         toReturn = []
         toReturn.append(self.init_weights_array_1(nn_skeleton[0], nn_skeleton[0])) # input -> layer 0 mapping
@@ -165,12 +277,15 @@ class AIPlayer(Player):
             toReturn.append(self.init_weights_array_1(nn_skeleton[i], nn_skeleton[i+1])) # layer i -> layer i+1 weight mapping
         return toReturn
 
+    # creates a single layer of a neural network, with inputs/outputs empty.
     def create_layer(self, num_elements):
+        # print(num_elements)
         toReturn = []
         for i in range(num_elements):
             toReturn.append([])
         return toReturn
 
+    # initializes pre-forwardpropagation input weights - a functional duplicate of init_weights_array we used for testing 
     def init_weights_array(self, inputList, nodeList):
         weights_list =[]
         for item in inputList:
@@ -180,6 +295,7 @@ class AIPlayer(Player):
             weights_list.append(item_to_nodes)
         return weights_list
 
+    # initializes pre-forwardpropagation input weights - a functional duplicate of init_weights_array we used for testing 
     def init_weights_array_1(self, inputList, nodeList):
         weights_list =[]
         for item in inputList:
@@ -189,6 +305,8 @@ class AIPlayer(Player):
             weights_list.append(item_to_nodes)
         return weights_list
 
+    # returns a 3-element list of  biases, first-layer nodes, and an array of inputs. Used in early
+    # build prototypes.
     def create_inputs_and_bias(self, inputList):
         first_layer_nodes = self.init_firstlayer_nodelist(inputList)
         bias_and_weights = self.init_bias_inputs_and_weights(first_layer_nodes)
@@ -197,18 +315,15 @@ class AIPlayer(Player):
 
     def generate_layer_output(self,inputList,nodeList, weights, bias):
         for n in range(0,len(nodeList)):
-
             inputSum = 0
             for i in range(len(inputList)):
                 inputSum += inputList[i][1] * weights[i][n]
             inputSum += bias[n][0] * bias[n][1]
             nodeList[n].append(inputSum)
-            #at this point the nodelist contains the sums of all inputs with weights applied
-
+        # at this point the nodelist contains the sums of all inputs with weights applied
         for n in range(0,len(nodeList)):
             nodeList[n].append(self.sigmoid(nodeList[n][0]))
-
-        #at this point the nodelist's entries all have the sigmoid func applied to them
+        # at this point the nodelist's entries all have the sigmoid func applied to them
         return nodeList
 
     def sigmoid(self, x):
@@ -223,7 +338,17 @@ class AIPlayer(Player):
         # forcing conditions from the powerpoint for testing purposes
         err = -0.4101
         print("test1", self.calc_delta(0.4101, err))
-    
+
+    # The "thinking" method.
+    # inputs - current state of the game as a gamestate object
+    # outputs -   
+    def NN(self, currentState):
+        # state_inputs  = self.init_nn_inputs(currentState)
+        self.ins = self.init_nn_inputs(currentState)
+        nn_after_forward = self.foward_prop(self.ins, self.nn, self.weights, self.bias_and_weights)
+        self.nn = nn_after_forward
+        output = nn_after_forward[2][0][1]
+        return output
     
     
     # # start backpropagation method family # # 
@@ -262,39 +387,17 @@ class AIPlayer(Player):
         return (new_weights, new_biases)
 
     def adjust_weights(self, weights, deltas, nn, bias_and_weights):
-        # print("BIAS BEFORE **************************************************************************** ")
-        # print(bias_and_weights)
-        # print("****************************************************************************")
         new_deltas = []
         for layer in reversed(deltas):
             new_deltas.append(layer)
         deltas = new_deltas
         alpha = 0.05
-        # for i in range(len(weights)):
-        #     for k in range(len(weights[i])):
-        #         print(weights[i][k])
-        #         print(nn[i][k][1])
-        #         print(deltas[i][k])
-        #         asdfasdf = 0
-        #         weights[i][k] = weights[i][k] + alpha * deltas[i][k] * nn[i][k][1]
-
-        # print(" **** WEIGHTS BEFORE ****")
-        # for layer in weights:
-        #     print(layer)
-        
+    
         for i in range(len(nn)):
             for k in range(len(nn[i])):
                 for m in range(len(weights[i][k])):
-                    # print("ADJUSTING WEIGHT ", weights[i][k][m], " WITH DELTA ", deltas[i][k], " AND NODE INPUT ", nn[i][k][0])
                     weights[i][k][m] = weights[i][k][m] + (deltas[i][k] * alpha * nn[i][k][0])
                 bias_and_weights[i][k][1] = bias_and_weights[i][k][1] + (deltas[i][k] * alpha * nn[i][k][0])
-        # print("BIAS AFTER *****************************************************************")
-        # print(bias_and_weights)
-        # print("****************************************************************************")
-        # print(" **** WEIGHTS AFTER ****")
-        # for layer in weights:
-        #     print(layer)
-        
         return (weights, bias_and_weights)
 
     def calc_error(self, expected, actual):
@@ -485,7 +588,7 @@ class AIPlayer(Player):
             for element in to_return_list:
                 element[1] = element[1]*0.85
        
-        return to_return_list
+        return to_return_list   
 
 
     ##
@@ -560,7 +663,8 @@ class AIPlayer(Player):
             # generate the next state that would happen based upon a given move
             nextState = self.getNextState(currentState, move)
             # evaluate that state using our heuristic
-            nextStateEval = self.heuristicStepsToGoal(nextState)
+            # nextStateEval = self.heuristicStepsToGoal(nextState)
+            nextStateEval = self.NN(nextState)
             #create a node object using what we have done so far
             newMoveNode = MoveNode(currentState,move,nextState,depth,None,nextStateEval)
             moveNodeList.append(newMoveNode)
@@ -584,12 +688,14 @@ class AIPlayer(Player):
         #don't care, attack any enemy
         return enemyLocations[0]
 
+    
     ##
     #
     # 
     ##
     def heuristicStepsToGoal(self, currentState):
-        ins = self.init_nn_inputs(currentState)
+        state_inputs  = self.init_nn_inputs(currentState)
+        # return self.NN(currentState)
         # print(self.create_NN(3, ins))
         # self.run_NN(ins)
         # print("#############################")
@@ -604,8 +710,6 @@ class AIPlayer(Player):
         tunnels = getConstrList(myState, types = (TUNNEL,))
         hills = getConstrList(myState, types = (ANTHILL,))
         allFoods = getConstrList(myState, None, (FOOD,))
-
-
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
         myFoodCount = myInv.foodCount
@@ -631,7 +735,6 @@ class AIPlayer(Player):
         foodDist = 9999999
         foodTurns = 0
         isTunnel = False
-
         # If-statetments intended to punish or reward the agent based upon the status of the environment
         if enemyWorkers == None or enemyWorkers == []:
             steps -=1000
@@ -656,7 +759,6 @@ class AIPlayer(Player):
             steps += 20
         if len(mySoldiers) < 1:
             steps += 25
-        
         # iteration through worker array to 
         for worker in myWorkers: 
             if worker.carrying: #worker has food; go to the hill
@@ -694,7 +796,6 @@ class AIPlayer(Player):
                 attackDist = stepsToReach(myState, drone.coords, enemyHill.coords)
             steps += attackDist
                 
-
         # # Target enemy workers with soldiers, then move to the anthill
         for soldier in mySoldiers:
             if len(enemyWorkers) > 0:
@@ -716,13 +817,9 @@ class AIPlayer(Player):
             steps *= 0.85
 
         steps = steps / 100
-        # trains the NN with the expected output
-        # logged_exp_out = np.log(steps)
-        # expected_out = self.sigmoid(logged_exp_out)
         expected_out = self.sigmoid(steps)
-        print("THIS IS OUR EXPECTED OUTPUT: ", expected_out)
-        self.train_NN(ins, expected_out)
-
+        self.ins.append([state_inputs, myState, expected_out])
+        print("steps", steps)
         return steps 
 
 
@@ -740,10 +837,9 @@ class AIPlayer(Player):
     ##
     #registerWin
     #
-    # This agent doens't learn
+    # This agent doesn't learn
     #
     def registerWin(self, hasWon):
-        #method templaste, not implemented
         pass
 
 
@@ -838,95 +934,3 @@ class MoveNode():
         self.parent = None
         self.evalOfState = evalOfState
 
-# testing!!
-
-# get a game state with some food and a worker on the tunnel (thanks Joanna!)
-def getGameState():
-    state = GameState.getBasicState()
-    #my setup
-    playerInventory = state.inventories[state.whoseTurn]
-    playerInventory.constrs.append(Construction((1, 1), FOOD))
-    playerTunnel = playerInventory.getTunnels()[0].coords
-    playerInventory.ants.append(Ant(playerTunnel, WORKER, state.whoseTurn))
-
-    #enemy setup
-    enemyInventory = state.inventories[1 - state.whoseTurn]
-    enemyInventory.constrs.append(Construction((2, 2), FOOD))
-    enemyInventory.constrs.append(Construction((8, 8), FOOD))
-    enemyInventory.constrs.append(Construction((6, 6), FOOD))
-    enemyTunnel = enemyInventory.getTunnels()[0].coords
-    enemyInventory.ants.append(Ant(enemyTunnel, WORKER, 1 - state.whoseTurn))
-
-    #inv setup
-    state.inventories[2].constrs = playerInventory.constrs + enemyInventory.constrs
-    state.inventories[2].ants = playerInventory.ants + enemyInventory.ants
-
-    return state
-
-
-# make a simple game state to test scores
-def heuristicStepsToGoalTest():
-    # get game state
-    state = getGameState()
-    myAnt = Ant((0, 6), WORKER, 0)
-    enemyAnt = Ant((0, 3), WORKER, 1)
-    state.inventories[state.whoseTurn].ants.append(myAnt)
-    state.inventories[1 - state.whoseTurn].ants.append(enemyAnt)
-    #making sure our heuristic score is a reasonable number
-    score = 100
-    testScore = heuristicStepsToGoal(state)
-    if (score > testScore):
-        print("Heuristic is too high")
-    if (testScore == 0):
-        print("Where's my score?")
-
-# make a move to test getMove()
-def getMoveTest():
-    state = getGameState()
-    player = AIPlayer(0)
-    playerMove = player.getMove(state)
-    move = Move(MOVE_ANT, [(8, 0), (7, 0), (7, 1)], None)
-    if move.coordList != playerMove.coordList:
-        print("Coordinates not the same")
-    if move.moveType != playerMove.moveType:
-        print("Move type not the same")
-
-# make nodes and moves to test bestmove()
-def bestMoveTest():
-    #first move (high cost)
-    state = getGameState()
-    move1 = Move(None, None, None)
-    node1 = SearchNode(move1, state, None)
-    node1.evaluation = 99999
-
-    #second move (low cost)
-    move2 = Move(None, None, None)
-    node2 = SearchNode(move2, state, None)
-    node2.evaluation = 1
-    myMove = bestMove([node1, node2])
-
-    if myMove is not move2:
-        print("Best Move is not the best move")
-
-if __name__ == "__main__":
-    getMoveTest()
-    bestMoveTest()
-    heuristicStepsToGoalTest()
-
-player = AIPlayer("ANNIE")
-def testForward():
-        ins = [['enemy worker?', 1], ['enemy worker count', 1], ['enemy queen alive?', 1], 
-        ['friendly workers alive?', 1], ['friendly queen alive?', 1], ['friendly queen on hill?', 1], 
-        ['friendly queen on food?', 1], ['friendly drone count', 1], ['friendly soldier count', 1], 
-        ['food distance calculation', 1], ['best drone to enemy queen distance', 1], 
-        ['soldier to nearest enemy target distance', 1]]
-        nn = player.create_NN(1, ins)
-        weights = player.init_1_weights(nn)
-        print("weights", weights)
-        bias = player.init_all_biases_to_be_1(nn)
-        print("biases", bias)
-        newNN = player.foward_prop(ins, nn, weights, bias)
-        print("newNN", newNN)
-        print("testForward completed")
-
-# testForward()
