@@ -14,6 +14,7 @@ from AIPlayerUtils import *
 # @author Sam Lemly
 # @author Cole Holbrook
 
+encounteredStates = {}
 ##
 # AIPlayer
 # Description: The responsibility of this class is to interact with the game by
@@ -120,7 +121,12 @@ class AIPlayer(Player):
                     avg_worker_distance += tunnel_dist
             
             avg_worker_distance = avg_worker_distance/len(myWorkers)
+
             if avg_worker_distance > 0:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
+            if avg_worker_distance > .5:
                 state_scores.append(1)
             else:
                 state_scores.append(0)
@@ -132,7 +138,23 @@ class AIPlayer(Player):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
+            if avg_worker_distance > 2:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
+            if avg_worker_distance > 2.5:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
             if avg_worker_distance > 3:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
+            if avg_worker_distance > 3.5:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
+            if avg_worker_distance > 4:
                 state_scores.append(1)
             else:
                 state_scores.append(0)
@@ -140,16 +162,20 @@ class AIPlayer(Player):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
+            if avg_worker_distance > 5:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
+            if avg_worker_distance > 5.5:
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
             if avg_worker_distance > 6:
                 state_scores.append(1)
             else:
                 state_scores.append(0)
-            if avg_worker_distance > 7.5:
-                state_scores.append(1)
-            else:
-                state_scores.append(0)
             
-            # array is now length 10
+            # array is now length ?
 
             my_food_count = myFoodCount
             while(my_food_count > 0):
@@ -177,31 +203,43 @@ class AIPlayer(Player):
             for worker in myWorkers:
                 enemy_hill_dist += approxDist(worker.coords, enemyHill.coords)
             enemy_hill_dist = enemy_hill_dist/len(myWorkers)
+
             if(enemy_hill_dist > 0):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
-
+            if (enemy_hill_dist > .5):
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
             if (enemy_hill_dist > 1):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
-
+            if (enemy_hill_dist > 1.5):
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
             if (enemy_hill_dist > 2):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
-
+            if (enemy_hill_dist > 2.5):
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
             if (enemy_hill_dist > 3):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
-
+            if (enemy_hill_dist > 3.5):
+                state_scores.append(1)
+            else:
+                state_scores.append(0)
             if (enemy_hill_dist > 4):
                 state_scores.append(1)
             else:
                 state_scores.append(0)
-
             if (enemy_hill_dist > 5):
                 state_scores.append(1)
             else:
@@ -233,7 +271,6 @@ class AIPlayer(Player):
                 state_scores.append(0)
                 enemy_hill_health -= 1
 
-            print(state_scores)
             return state_scores
 
 
@@ -294,7 +331,10 @@ class AIPlayer(Player):
             return moves
         else:
             return [(0, 0)]
-    
+
+    encounteredStates = {}
+    a = 1
+
     ##
     # getMove
     # Description: Gets the next move from the Player.
@@ -310,13 +350,22 @@ class AIPlayer(Player):
         root = Node(None, currentState, 0, 0, None)
         nodes = self.expandNode(root)
 
-        for node in nodes:
-            node.steps = self.categorize_state(node.state)
+        global encounteredStates
+        print(len(encounteredStates))
 
         # don't do a build move if there are already 3+ ants
         numAnts = len(currentState.inventories[currentState.whoseTurn].ants)
         while (selectedMove.moveType == BUILD and numAnts >= 3):
             selectedMove = moves[random.randint(0,len(moves) - 1)];
+
+        # Set the utility of the current state by looking ahead at the utility of the selected state
+        if hash(tuple(self.categorize_state(currentState))) not in encounteredStates:
+            # We will want this to be our utility function, and pass in the selected state
+            utility = 0
+            # Put the current state into the selected states and set the utility using the selected state
+            encounteredStates[hash(tuple(self.categorize_state(currentState)))] = utility
+        elif hash(tuple(self.categorize_state(currentState))) in encounteredStates:
+            print("State already encountered, utility already set")
 
         return selectedMove
 
