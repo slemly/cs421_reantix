@@ -273,10 +273,23 @@ class AIPlayer(Player):
 
             return state_scores
 
+    def utility(self, currentState, nextNode):
 
+        currentStateUtility = 0
+        if hash(tuple(self.categorize_state(currentState))) in encounteredStates:
+            # We will want this to be our utility function, and pass in the selected state
+            currentStateUtility = encounteredStates[hash(tuple(self.categorize_state(currentState)))]
 
-            
+        reward = -0.001
+        discount = .9
+        learningRate = .1
+        nextStateUtility = 0
+        if hash(tuple(self.categorize_state(nextNode.state))) in encounteredStates:
+            # We will want this to be our utility function, and pass in the selected state
+            nextStateUtility = encounteredStates[hash(tuple(self.categorize_state(nextNode.state)))]
 
+        currentStateUtility = currentStateUtility + learningRate * (reward + discount * nextStateUtility - currentStateUtility)
+        encounteredStates[hash(tuple(self.categorize_state(currentState)))] = currentStateUtility
 
     ##
     # getPlacement
@@ -332,9 +345,6 @@ class AIPlayer(Player):
         else:
             return [(0, 0)]
 
-    encounteredStates = {}
-    a = 1
-
     ##
     # getMove
     # Description: Gets the next move from the Player.
@@ -346,28 +356,24 @@ class AIPlayer(Player):
     ##
     def getMove(self, currentState):
         moves = listAllLegalMoves(currentState)
-        selectedMove = moves[random.randint(0,len(moves) - 1)];
         root = Node(None, currentState, 0, 0, None)
         nodes = self.expandNode(root)
 
         global encounteredStates
         print(len(encounteredStates))
 
-        # don't do a build move if there are already 3+ ants
-        numAnts = len(currentState.inventories[currentState.whoseTurn].ants)
-        while (selectedMove.moveType == BUILD and numAnts >= 3):
-            selectedMove = moves[random.randint(0,len(moves) - 1)];
+        random.shuffle(nodes)
+        selectedNode = nodes[0]
 
         # Set the utility of the current state by looking ahead at the utility of the selected state
         if hash(tuple(self.categorize_state(currentState))) not in encounteredStates:
             # We will want this to be our utility function, and pass in the selected state
-            utility = 0
-            # Put the current state into the selected states and set the utility using the selected state
-            encounteredStates[hash(tuple(self.categorize_state(currentState)))] = utility
+            self.utility(currentState, selectedNode)
+
         elif hash(tuple(self.categorize_state(currentState))) in encounteredStates:
             print("State already encountered, utility already set")
 
-        return selectedMove
+        return selectedNode.move
 
     ##
     # expandNode
@@ -423,3 +429,4 @@ class Node:
         self.depth = depth
         self.steps = steps + self.depth
         self.parent = parent
+
