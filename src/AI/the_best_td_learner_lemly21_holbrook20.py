@@ -9,12 +9,19 @@ from Move import Move
 from GameState import *
 import os
 from AIPlayerUtils import *
+import math
 
 
 # @author Sam Lemly
 # @author Cole Holbrook
 
+
 encounteredStates = {}
+move_ticker = 0
+chance_random = 1.00
+wincount = 0
+
+
 ##
 # AIPlayer
 # Description: The responsibility of this class is to interact with the game by
@@ -291,6 +298,10 @@ class AIPlayer(Player):
         currentStateUtility = currentStateUtility + learningRate * (reward + discount * nextStateUtility - currentStateUtility)
         encounteredStates[hash(tuple(self.categorize_state(currentState)))] = currentStateUtility
 
+
+
+
+
     ##
     # getPlacement
     #
@@ -355,24 +366,45 @@ class AIPlayer(Player):
     # Return: The Move to be made
     ##
     def getMove(self, currentState):
-        moves = listAllLegalMoves(currentState)
-        root = Node(None, currentState, 0, 0, None)
-        nodes = self.expandNode(root)
-
+        global move_ticker
+        global chance_random
+        global wincount
         global encounteredStates
-        print(len(encounteredStates))
 
-        random.shuffle(nodes)
-        selectedNode = nodes[0]
+        moves = listAllLegalMoves(currentState)
+        root = Node(None, currentState, 0, 0, None, self.categorize_state(currentState))
+        nodes = self.expandNode(root)
+        # print(len(encounteredStates))
+        rand_num = random.uniform(0,1)
 
+        if rand_num < chance_random: #explore
+            random.shuffle(nodes)
+            selectedNode = nodes[0]
+        else: #exploit
+            print("CONTROLLED MOVE: WINCOUNT = ", wincount, " RAND CHANCE: ", chance_random)
+            selectedNode = None
+            selected_node_utility = -999999999
+            for node in nodes:
+                if hash(tuple(self.categorize_state(node.state))) in encounteredStates:
+                    curr_node_util = (encounteredStates[hash(tuple(self.categorize_state(node.state)))])
+                    if curr_node_util > selected_node_utility:
+                        selected_node_utility = curr_node_util
+                        selectedNode = node
+                    # We will want this to be our utility function, and pass in the selected state
+        if type(selectedNode) == None :
+            random.shuffle(nodes)
+            selectedNode = nodes[0]
+        
         # Set the utility of the current state by looking ahead at the utility of the selected state
-        if hash(tuple(self.categorize_state(currentState))) not in encounteredStates:
-            # We will want this to be our utility function, and pass in the selected state
-            self.utility(currentState, selectedNode)
+        self.utility(currentState, selectedNode)
 
-        elif hash(tuple(self.categorize_state(currentState))) in encounteredStates:
-            print("State already encountered, utility already set")
 
+        move_ticker += 1
+        
+        if wincount > 0:
+            move_ticker += 1
+            chance_random = 0.8/math.exp(wincount/50)+.1 #function controlling decay of random chance
+            
         return selectedNode.move
 
     ##
@@ -389,7 +421,7 @@ class AIPlayer(Player):
         nodes = []
         for move in moves:
             nextState = getNextState(node.state, move)
-            newNode = Node(move, nextState, 0, 0, node)
+            newNode = Node(move, nextState, 0, 0, node, self.categorize_state(nextState))
             nodes.append(newNode)
         return nodes
     
@@ -412,8 +444,10 @@ class AIPlayer(Player):
     # This agent doesn't learn
     #
     def registerWin(self, hasWon):
-        # method templaste, not implemented
-        pass
+        global move_ticker
+        global wincount
+        if hasWon: wincount+=1
+
 
 
 ##
@@ -423,10 +457,10 @@ class AIPlayer(Player):
 #
 ##
 class Node:
-    def __init__(self, move, state, depth, steps, parent):
+    def __init__(self, move, state, depth, steps, parent, category):
         self.move = move
         self.state = state
         self.depth = depth
         self.steps = steps + self.depth
         self.parent = parent
-
+        self.category = category
