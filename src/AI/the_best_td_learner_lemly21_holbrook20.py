@@ -281,6 +281,32 @@ class AIPlayer(Player):
             return state_scores
 
     def utility(self, currentState, nextNode):
+        myState = nextNode.state
+        #it's me!
+        me = myState.whoseTurn
+        enemy = 1-me
+        #finding out what belongs to whom
+        myInv = getCurrPlayerInventory(myState)
+        myFoodCount = myInv.foodCount
+        # my items/constructs/ants
+        myTunnel = myInv.getTunnels()[0]
+        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        myWorkers = getAntList(myState, me, (WORKER,))
+        
+        # enemy items/constructs/ants
+        enemyInv = getEnemyInv(self, myState)
+        enemyFoodCount = enemyInv.foodCount
+        enemyTunnel = enemyInv.getTunnels()[0]
+        enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
+        enemyWorkers = getAntList(myState, enemy, (WORKER,))
+        enemyQueen = enemyInv.getQueen()
+        #arbitrary food distance value for workers to work around
+        foodDist = 9999999
+        foodTurns = 0
+        isTunnel = False
+        tunnels = getConstrList(myState, types = (TUNNEL,))
+        hills = getConstrList(myState, types = (ANTHILL,))
+        allFoods = getConstrList(myState, None, (FOOD,))
 
         currentStateUtility = 0
         if hash(tuple(self.categorize_state(currentState))) in encounteredStates:
@@ -288,13 +314,28 @@ class AIPlayer(Player):
             currentStateUtility = encounteredStates[hash(tuple(self.categorize_state(currentState)))]
 
         reward = -0.001
+        for worker in myWorkers:
+            if worker.coords == enemyHill.coords:
+                reward = 0.05
         discount = .9
         learningRate = .1
         nextStateUtility = 0
-        if hash(tuple(self.categorize_state(nextNode.state))) in encounteredStates:
+        if type(nextNode) ==None or hash(tuple(self.categorize_state(nextNode.state))) == None :
+            nextStateUtility = 0
+        elif hash(tuple(self.categorize_state(nextNode.state))) in encounteredStates:
             # We will want this to be our utility function, and pass in the selected state
             nextStateUtility = encounteredStates[hash(tuple(self.categorize_state(nextNode.state)))]
-
+        
+        win_check = self.checkForWin(nextNode.state)
+        loss_check = self.checkForLoss(nextNode.state)
+        if win_check and not loss_check:
+            reward = 1
+        elif loss_check and not win_check:
+            reward = -1
+        else:
+            pass # reward is already -0.001
+        
+        # TD-learning equation
         currentStateUtility = currentStateUtility + learningRate * (reward + discount * nextStateUtility - currentStateUtility)
         encounteredStates[hash(tuple(self.categorize_state(currentState)))] = currentStateUtility
 
@@ -376,34 +417,49 @@ class AIPlayer(Player):
         nodes = self.expandNode(root)
         # print(len(encounteredStates))
         rand_num = random.uniform(0,1)
-
-        if rand_num < chance_random: #explore
-            random.shuffle(nodes)
-            selectedNode = nodes[0]
-        else: #exploit
-            print("CONTROLLED MOVE: WINCOUNT = ", wincount, " RAND CHANCE: ", chance_random)
-            selectedNode = None
-            selected_node_utility = -999999999
-            for node in nodes:
-                if hash(tuple(self.categorize_state(node.state))) in encounteredStates:
-                    curr_node_util = (encounteredStates[hash(tuple(self.categorize_state(node.state)))])
-                    if curr_node_util > selected_node_utility:
-                        selected_node_utility = curr_node_util
-                        selectedNode = node
-                    # We will want this to be our utility function, and pass in the selected state
-        if type(selectedNode) == None :
-            random.shuffle(nodes)
-            selectedNode = nodes[0]
+        if not self.checkForLoss(currentState) and not self.checkForWin(currentState) and len(nodes) > 0:
+            if rand_num < chance_random: #explore - make random moves unless you see a winning move to be made
+                random.shuffle(nodes)
+                selectedNode = nodes[0]
+                for node in nodes:
+                    if self.checkForWin(node.state):
+                            selectedNode = node
+                            encounteredStates[hash(tuple(self.categorize_state(node.state)))] = 1
+                            # print("I SEE A WIN STATE")
+                            break
+            else: #exploit
+                # print("CONTROLLED MOVE: WINCOUNT = ", wincount, " RAND CHANCE: ", chance_random)
+                # selectedNode = None
+                random.shuffle(nodes)
+                selectedNode = nodes[0]
+                selected_node_utility = -999999999
+                for node in nodes:
+                    if hash(tuple(self.categorize_state(node.state))) in encounteredStates:
+                        curr_node_util = (encounteredStates[hash(tuple(self.categorize_state(node.state)))])
+                        # print("UTIL = ", curr_node_util)
+                        if curr_node_util > selected_node_utility:
+                            selected_node_utility = curr_node_util
+                            selectedNode = node
+                        
+                        # We will want this to be our utility function, and pass in the selected state
+            if type(selectedNode) == None and len(nodes) != 0:
+                random.shuffle(nodes)
+                selectedNode = nodes[0]
         
-        # Set the utility of the current state by looking ahead at the utility of the selected state
-        self.utility(currentState, selectedNode)
 
+
+            # Set the utility of the current state by looking ahead at the utility of the selected state
+            self.utility(currentState, selectedNode)
+
+        if type(selectedNode) == None and len(nodes) != 0:
+                random.shuffle(nodes)
+                selectedNode = nodes[0]
 
         move_ticker += 1
         
         if wincount > 0:
             move_ticker += 1
-            chance_random = 0.8/math.exp(wincount/50)+.1 #function controlling decay of random chance
+            chance_random = 0.8/math.exp(wincount/7)+.1 #function controlling decay of random chance
             
         return selectedNode.move
 
@@ -446,7 +502,93 @@ class AIPlayer(Player):
     def registerWin(self, hasWon):
         global move_ticker
         global wincount
-        if hasWon: wincount+=1
+        if hasWon: 
+            wincount+=1
+            print("*** WE WIN THESE ***", move_ticker, wincount)
+
+    def checkForWin(self, currentState):
+        myState = currentState
+        #it's me!
+        me = myState.whoseTurn
+        enemy = 1-me
+        #finding out what belongs to whom
+        myInv = getCurrPlayerInventory(myState)
+        myFoodCount = myInv.foodCount
+        # my items/constructs/ants
+        myTunnel = myInv.getTunnels()[0]
+        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        myWorkers = getAntList(myState, me, (WORKER,))
+        myQueen = myInv.getQueen()
+        # enemy items/constructs/ants
+        enemyInv = getEnemyInv(self, myState)
+        enemyFoodCount = enemyInv.foodCount
+        enemyTunnel = enemyInv.getTunnels()[0]
+        enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
+        enemyWorkers = getAntList(myState, enemy, (WORKER,))
+        enemyQueen = enemyInv.getQueen()
+        #arbitrary food distance value for workers to work around
+        foodDist = 9999999
+        foodTurns = 0
+        isTunnel = False
+        tunnels = getConstrList(myState, types = (TUNNEL,))
+        hills = getConstrList(myState, types = (ANTHILL,))
+        allFoods = getConstrList(myState, None, (FOOD,))
+
+        if enemyQueen == None:
+            return True
+        elif enemyQueen.health <= 0:
+            return True
+        if enemyHill.captureHealth <= 0:
+            return True
+        if myFoodCount >= 11:
+            return True
+        if len(enemyWorkers) <= 0:
+            if enemyFoodCount <= 0:
+                return True
+        return False
+     
+    def checkForLoss(self, currentState):
+        myState = currentState
+        #it's me!
+        me = myState.whoseTurn
+        enemy = 1-me
+        #finding out what belongs to whom
+        myInv = getCurrPlayerInventory(myState)
+        myFoodCount = myInv.foodCount
+        # my items/constructs/ants
+        myTunnel = myInv.getTunnels()[0]
+        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
+        myWorkers = getAntList(myState, me, (WORKER,))
+        myQueen = myInv.getQueen()
+        
+        # enemy items/constructs/ants
+        enemyInv = getEnemyInv(self, myState)
+        enemyFoodCount = enemyInv.foodCount
+        enemyTunnel = enemyInv.getTunnels()[0]
+        enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
+        enemyWorkers = getAntList(myState, enemy, (WORKER,))
+        enemyQueen = enemyInv.getQueen()
+        #arbitrary food distance value for workers to work around
+
+        if myQueen == None:
+            return True
+        if myQueen.health <= 0:
+            return True
+        if myHill.captureHealth <= 0:
+            return True
+        if enemyFoodCount >= 11:
+            return True
+        if len(myWorkers) <= 0:
+            if myFoodCount <= 0:
+                return True
+        return False
+     
+
+
+
+        
+        
+
 
 
 
