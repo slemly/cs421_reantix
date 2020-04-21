@@ -1,3 +1,4 @@
+import ast
 import random
 import sys
 sys.path.append("..")  # so other modules can be found in parent dir
@@ -10,6 +11,8 @@ from GameState import *
 import os
 from AIPlayerUtils import *
 import math
+
+import json
 
 
 # @author Sam Lemly
@@ -42,11 +45,14 @@ class AIPlayer(Player):
     ##
     def __init__(self, inputPlayerId):
         super(AIPlayer,self).__init__(inputPlayerId, "TD-Learner")
+        global encounteredStates
+        # with open('..\encounteredStates.txt', 'r') as file:
+        #    contents = file.read()
+        #    encounteredStates = ast.literal_eval(contents)
     
 
     def categorize_state(self, currentState):
         myState = currentState
-        #it's me!
         me = myState.whoseTurn
         enemy = 1-me
         #finding out what belongs to whom
@@ -56,26 +62,11 @@ class AIPlayer(Player):
         myTunnel = myInv.getTunnels()[0]
         myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myWorkers = getAntList(myState, me, (WORKER,))
-        mySoldiers = getAntList(myState, me, (SOLDIER,))
-        myRSoldiers = getAntList(myState, me, (R_SOLDIER,))
-        myDrones = getAntList(myState, me, (DRONE,))
         myQueen = myInv.getQueen()
         myAnts = myInv.ants
         # enemy items/constructs/ants
-        enemyInv = getEnemyInv(self, myState)
-        enemyTunnel = enemyInv.getTunnels()[0]
         enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
         enemyWorkers = getAntList(myState, enemy, (WORKER,))
-        ememySoldiers = getAntList(myState, enemy, (SOLDIER,))
-        enemyRSoldiers = getAntList(myState, enemy, (R_SOLDIER,))
-        enemyDrones = getAntList(myState, enemy, (DRONE,))
-        enemyQueen = enemyInv.getQueen()
-        #arbitrary food distance value for workers to work around
-        foodDist = 9999999
-        foodTurns = 0
-        isTunnel = False
-        tunnels = getConstrList(myState, types = (TUNNEL,))
-        hills = getConstrList(myState, types = (ANTHILL,))
         allFoods = getConstrList(myState, None, (FOOD,))
 
         # '''
@@ -126,8 +117,10 @@ class AIPlayer(Player):
                         if approxDist(worker.coords, myTunnel.coords) < tunnel_dist:
                             tunnel_dist = approxDist(worker.coords, myTunnel.coords)
                     avg_worker_distance += tunnel_dist
-            
-            avg_worker_distance = avg_worker_distance/len(myWorkers)
+            if len(myWorkers) != 0:
+                avg_worker_distance = avg_worker_distance/len(myWorkers)
+            else:
+                avg_worker_distance = 0;
 
             if avg_worker_distance > 0:
                 state_scores.append(1)
@@ -209,7 +202,11 @@ class AIPlayer(Player):
             enemy_hill_dist = 0
             for worker in myWorkers:
                 enemy_hill_dist += approxDist(worker.coords, enemyHill.coords)
-            enemy_hill_dist = enemy_hill_dist/len(myWorkers)
+
+            if len(myWorkers) != 0:
+                enemy_hill_dist = enemy_hill_dist/len(myWorkers)
+            else:
+                enemy_hill_dist= 0;
 
             if(enemy_hill_dist > 0):
                 state_scores.append(1)
@@ -278,6 +275,14 @@ class AIPlayer(Player):
                 state_scores.append(0)
                 enemy_hill_health -= 1
 
+            antOnHill = False
+            for ant in myAnts:
+                if ant.coords == enemyHill.coords:
+                    antOnHill = True
+                    state_scores.append(1)
+            if not antOnHill:
+                state_scores.append(0)
+
             return state_scores
 
     def utility(self, currentState, nextNode):
@@ -287,26 +292,12 @@ class AIPlayer(Player):
         enemy = 1-me
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
-        myFoodCount = myInv.foodCount
         # my items/constructs/ants
-        myTunnel = myInv.getTunnels()[0]
-        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myWorkers = getAntList(myState, me, (WORKER,))
         
         # enemy items/constructs/ants
         enemyInv = getEnemyInv(self, myState)
-        enemyFoodCount = enemyInv.foodCount
-        enemyTunnel = enemyInv.getTunnels()[0]
         enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
-        enemyWorkers = getAntList(myState, enemy, (WORKER,))
-        enemyQueen = enemyInv.getQueen()
-        #arbitrary food distance value for workers to work around
-        foodDist = 9999999
-        foodTurns = 0
-        isTunnel = False
-        tunnels = getConstrList(myState, types = (TUNNEL,))
-        hills = getConstrList(myState, types = (ANTHILL,))
-        allFoods = getConstrList(myState, None, (FOOD,))
 
         currentStateUtility = 0
         if hash(tuple(self.categorize_state(currentState))) in encounteredStates:
@@ -333,15 +324,11 @@ class AIPlayer(Player):
         elif loss_check and not win_check:
             reward = -1
         else:
-            pass # reward is already -0.001
+            pass  # reward is already -0.001
         
         # TD-learning equation
         currentStateUtility = currentStateUtility + learningRate * (reward + discount * nextStateUtility - currentStateUtility)
         encounteredStates[hash(tuple(self.categorize_state(currentState)))] = currentStateUtility
-
-
-
-
 
     ##
     # getPlacement
@@ -412,46 +399,41 @@ class AIPlayer(Player):
         global wincount
         global encounteredStates
 
-        moves = listAllLegalMoves(currentState)
         root = Node(None, currentState, 0, 0, None, self.categorize_state(currentState))
         nodes = self.expandNode(root)
-        # print(len(encounteredStates))
+
         rand_num = random.uniform(0,1)
+        selectedNode = None
+
         if not self.checkForLoss(currentState) and not self.checkForWin(currentState) and len(nodes) > 0:
-            if rand_num < chance_random: #explore - make random moves unless you see a winning move to be made
+            if rand_num < chance_random:  # explore - make random moves unless you see a winning move to be made
                 random.shuffle(nodes)
                 selectedNode = nodes[0]
                 for node in nodes:
                     if self.checkForWin(node.state):
                             selectedNode = node
                             encounteredStates[hash(tuple(self.categorize_state(node.state)))] = 1
-                            # print("I SEE A WIN STATE")
                             break
-            else: #exploit
-                # print("CONTROLLED MOVE: WINCOUNT = ", wincount, " RAND CHANCE: ", chance_random)
-                # selectedNode = None
+            else:  # exploit
+
                 random.shuffle(nodes)
                 selectedNode = nodes[0]
                 selected_node_utility = -999999999
                 for node in nodes:
                     if hash(tuple(self.categorize_state(node.state))) in encounteredStates:
                         curr_node_util = (encounteredStates[hash(tuple(self.categorize_state(node.state)))])
-                        # print("UTIL = ", curr_node_util)
                         if curr_node_util > selected_node_utility:
                             selected_node_utility = curr_node_util
                             selectedNode = node
-                        
-                        # We will want this to be our utility function, and pass in the selected state
+
             if type(selectedNode) == None and len(nodes) != 0:
                 random.shuffle(nodes)
                 selectedNode = nodes[0]
-        
-
 
             # Set the utility of the current state by looking ahead at the utility of the selected state
             self.utility(currentState, selectedNode)
 
-        if type(selectedNode) == None and len(nodes) != 0:
+        if selectedNode is None and len(nodes) != 0:
                 random.shuffle(nodes)
                 selectedNode = nodes[0]
 
@@ -459,7 +441,7 @@ class AIPlayer(Player):
         
         if wincount > 0:
             move_ticker += 1
-            chance_random = 0.8/math.exp(wincount/7)+.1 #function controlling decay of random chance
+            chance_random = 0.8/math.exp(wincount/7)+.1  # function controlling decay of random chance
             
         return selectedNode.move
 
@@ -506,33 +488,22 @@ class AIPlayer(Player):
             wincount+=1
             print("*** WE WIN THESE ***", move_ticker, wincount)
 
+        with open('encounteredState.txt', 'w') as file:
+            file.write(json.dumps(encounteredStates))
+
     def checkForWin(self, currentState):
         myState = currentState
-        #it's me!
         me = myState.whoseTurn
         enemy = 1-me
         #finding out what belongs to whom
         myInv = getCurrPlayerInventory(myState)
         myFoodCount = myInv.foodCount
-        # my items/constructs/ants
-        myTunnel = myInv.getTunnels()[0]
-        myHill = getConstrList(currentState, me, (ANTHILL,))[0]
-        myWorkers = getAntList(myState, me, (WORKER,))
-        myQueen = myInv.getQueen()
         # enemy items/constructs/ants
         enemyInv = getEnemyInv(self, myState)
         enemyFoodCount = enemyInv.foodCount
-        enemyTunnel = enemyInv.getTunnels()[0]
         enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
         enemyWorkers = getAntList(myState, enemy, (WORKER,))
         enemyQueen = enemyInv.getQueen()
-        #arbitrary food distance value for workers to work around
-        foodDist = 9999999
-        foodTurns = 0
-        isTunnel = False
-        tunnels = getConstrList(myState, types = (TUNNEL,))
-        hills = getConstrList(myState, types = (ANTHILL,))
-        allFoods = getConstrList(myState, None, (FOOD,))
 
         if enemyQueen == None:
             return True
@@ -556,7 +527,6 @@ class AIPlayer(Player):
         myInv = getCurrPlayerInventory(myState)
         myFoodCount = myInv.foodCount
         # my items/constructs/ants
-        myTunnel = myInv.getTunnels()[0]
         myHill = getConstrList(currentState, me, (ANTHILL,))[0]
         myWorkers = getAntList(myState, me, (WORKER,))
         myQueen = myInv.getQueen()
@@ -564,13 +534,8 @@ class AIPlayer(Player):
         # enemy items/constructs/ants
         enemyInv = getEnemyInv(self, myState)
         enemyFoodCount = enemyInv.foodCount
-        enemyTunnel = enemyInv.getTunnels()[0]
-        enemyHill = getConstrList(currentState, enemy, (ANTHILL,))[0]
-        enemyWorkers = getAntList(myState, enemy, (WORKER,))
-        enemyQueen = enemyInv.getQueen()
-        #arbitrary food distance value for workers to work around
 
-        if myQueen == None:
+        if myQueen is None:
             return True
         if myQueen.health <= 0:
             return True
@@ -582,14 +547,6 @@ class AIPlayer(Player):
             if myFoodCount <= 0:
                 return True
         return False
-     
-
-
-
-        
-        
-
-
 
 
 ##
